@@ -20,6 +20,9 @@ It combines:
   missing-post detection, observed message-ID ranges, and lexical review aids; and
 - bounded inspection of explicitly selected public Telegram history cursors for
   rebrands, disclosure changes, and other literal transitions; and
+- bounded provenance inspection of public PDF artifacts, including document
+  metadata, visible author cues, reference headings, dated citations, links,
+  content hashes, and explicit interpretation limits; and
 - an optional dedicated-WSL/WireGuard layout that keeps research traffic
   separate from ordinary browsers and Docker workloads.
 
@@ -118,6 +121,7 @@ Available MCP tools:
 - `public_x_status`
 - `public_telegram_citation_audit`
 - `public_telegram_history_probe`
+- `public_pdf_provenance`
 
 ## Data CLIs
 
@@ -153,6 +157,20 @@ kekmaxxing-telegram-history \
 The command does not follow pagination, enumerate message IDs, authenticate, or
 join channels. It records response hashes and returns only the posts visible on
 the caller-selected public pages; matches still require manual context review.
+
+Inspect a directly linked public PDF for reproducible provenance signals:
+
+```bash
+kekmaxxing-pdf \
+  https://example.org/public-report.pdf \
+  --output output/public-pdf-provenance.json
+```
+
+The result records the response hash, PDF metadata, inspected page numbers,
+document-level author cues, reference headings, parenthetical publication years,
+and embedded/text links. Missing metadata or references is an investigative lead,
+not proof of deceptive or automated authorship, and the tool does not fact-check
+the document's substantive claims.
 
 Search Google's official advertiser index:
 

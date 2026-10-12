@@ -24,6 +24,7 @@ dependencies = [
   "dnspython>=2.6,<3",
   "httpx>=0.27,<1",
   "mcp>=1.12,<2",
+  "pypdf>=6,<7",
   "remotezip>=0.12,<1",
   "undetected-chromedriver==3.5.5",
 ]
@@ -45,6 +46,7 @@ kekmaxxing-timeline = "kekmaxxing_mcp.timeline:main"
 kekmaxxing-x = "kekmaxxing_mcp.x_public:main"
 kekmaxxing-citation-audit = "kekmaxxing_mcp.citation_audit:main"
 kekmaxxing-telegram-history = "kekmaxxing_mcp.telegram_public:main"
+kekmaxxing-pdf = "kekmaxxing_mcp.pdf_public:main"
 kekmaxxing-install-browser = "kekmaxxing_mcp.install_browser:main"
 
 [tool.hatch.build.targets.wheel]

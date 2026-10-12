@@ -16,6 +16,7 @@ from .fec import (
 )
 from .google_ads import find_advertisers
 from .passive import compare_pages, page_fingerprint, resolve_records, tls_certificate
+from .pdf_public import inspect_public_pdf
 from .procurement import load_fpds_award_history, load_usaspending_award
 from .telegram_public import probe_public_telegram_history
 from .timeline import analyze_public_post_timelines as analyze_timelines
@@ -217,6 +218,16 @@ def public_telegram_history_probe(
     ownership from text matches.
     """
     return probe_public_telegram_history(channel, cursors, needles)
+
+
+@mcp.tool()
+def public_pdf_provenance(url: str, max_bytes: int = 20_000_000, max_pages: int = 200) -> dict:
+    """Inspect one public PDF for bounded authorship, citation, link, and metadata signals.
+
+    Missing metadata or references is a provenance lead, not proof of deception,
+    automated authorship, or false content.
+    """
+    return inspect_public_pdf(url, max_bytes=max_bytes, max_pages=max_pages)
 
 
 def main() -> None:
