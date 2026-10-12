@@ -26,6 +26,9 @@ It combines:
 - bounded public-site manifests that hash same-origin scripts and record forms,
   assets, structured metadata, and public endpoint references without executing
   code, submitting forms, or calling discovered endpoints; and
+- bounded archive/live snapshot comparison that separates raw HTML churn from
+  visible-text changes, hashes each version, records link deltas, and redacts
+  contact details from change excerpts; and
 - privacy-minimized RDAP snapshots that preserve registration dates,
   nameservers, registrar, and status while omitting registrant contacts; and
 - an optional dedicated-WSL/WireGuard layout that keeps research traffic
@@ -128,6 +131,7 @@ Available MCP tools:
 - `public_telegram_history_probe`
 - `public_pdf_provenance`
 - `public_site_manifest`
+- `public_snapshot_delta`
 - `public_rdap_snapshot`
 - `tse_candidate_account_search`
 - `tse_candidate_account_delta`
@@ -194,6 +198,24 @@ labels, script assets, and literal public path/host references. It does not
 execute JavaScript, submit forms, fetch third-party scripts, or call application
 endpoints found in code. Shared infrastructure is a comparison lead, not proof
 of common ownership or data sharing.
+
+Compare two or more caller-selected public snapshots in chronological order:
+
+```bash
+kekmaxxing-snapshot-delta \
+  "https://web.archive.org/web/20260101000000id_/https://example.org/" \
+  "https://example.org/" \
+  --label archived \
+  --label current \
+  --output output/snapshot-delta.json
+```
+
+The comparison distinguishes raw-byte changes from normalized visible-text
+changes, preserves hashes and server-supplied `Last-Modified` metadata, and
+returns bounded added/removed/replaced excerpts. Email addresses and phone-like
+strings are redacted from excerpts, and query strings are omitted from reported
+links. Archive coverage and `Last-Modified` values only bound a change window;
+they do not identify who made the edit.
 
 Preserve a privacy-minimized RDAP domain snapshot:
 

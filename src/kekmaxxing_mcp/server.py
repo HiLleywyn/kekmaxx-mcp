@@ -20,6 +20,7 @@ from .pdf_public import inspect_public_pdf
 from .procurement import load_fpds_award_history, load_usaspending_award
 from .rdap_public import inspect_public_rdap
 from .site_manifest import inspect_public_site_manifest
+from .snapshot_delta import compare_public_snapshots
 from .telegram_public import probe_public_telegram_history
 from .timeline import analyze_public_post_timelines as analyze_timelines
 from .tse_accounts import compare_tse_candidate_accounts, inspect_tse_candidate_accounts
@@ -248,6 +249,27 @@ def public_site_manifest(
         max_bytes=max_bytes,
         max_same_origin_scripts=max_same_origin_scripts,
         max_script_bytes=max_script_bytes,
+    )
+
+
+@mcp.tool()
+def public_snapshot_delta(
+    urls: list[str],
+    labels: list[str] | None = None,
+    max_bytes: int = 2_000_000,
+    max_excerpts: int = 12,
+) -> dict:
+    """Compare two to eight public HTML snapshots and preserve visible changes.
+
+    The tool does not execute JavaScript or submit forms. It reports full-text
+    hashes and bounded change excerpts with email addresses and phone-like
+    strings redacted. Similarity or timing does not establish authorship.
+    """
+    return compare_public_snapshots(
+        urls,
+        labels=labels,
+        max_bytes=max_bytes,
+        max_excerpts=max_excerpts,
     )
 
 
