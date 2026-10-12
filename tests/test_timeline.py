@@ -166,3 +166,59 @@ def test_timeline_groups_one_source_relayed_by_multiple_carriers(tmp_path) -> No
     assert group["carrier_spread_seconds"] == 19
     assert group["source_to_first_carrier_seconds"] == 60
     assert group["source_to_last_carrier_seconds"] == 79
+
+
+def test_timeline_reports_reciprocal_resolved_relays(tmp_path) -> None:
+    alpha = tmp_path / "alpha.csv"
+    beta = tmp_path / "beta.csv"
+    _write_posts(
+        alpha,
+        [
+            {
+                "channel": "alpha",
+                "datetime_utc": "2026-10-08T12:00:00+00:00",
+                "post_url": "https://t.me/alpha/10",
+                "text": "A" * 90,
+                "outbound_urls": "[]",
+            },
+            {
+                "channel": "alpha",
+                "datetime_utc": "2026-10-08T12:03:00+00:00",
+                "post_url": "https://t.me/alpha/11",
+                "text": "B" * 90,
+                "outbound_urls": json.dumps(["https://t.me/beta/20"]),
+            },
+        ],
+    )
+    _write_posts(
+        beta,
+        [
+            {
+                "channel": "beta",
+                "datetime_utc": "2026-10-08T12:01:00+00:00",
+                "post_url": "https://t.me/beta/20",
+                "text": "C" * 90,
+                "outbound_urls": json.dumps(["https://t.me/alpha/10"]),
+            }
+        ],
+    )
+
+    result = analyze_public_post_timelines(
+        [alpha, beta],
+        baseline_start="2026-10-06",
+        event_start="2026-10-08",
+        event_end="2026-10-09",
+    )
+
+    pair = result["reciprocal_channel_pairs"][0]
+    assert pair["channels"] == ["alpha", "beta"]
+    assert pair["total_occurrences"] == 2
+    directions = {
+        (item["source_channel"], item["carrier_channel"]): item
+        for item in pair["directions"]
+    }
+    assert directions[("alpha", "beta")]["min_propagation_seconds"] == 60
+    assert directions[("beta", "alpha")]["min_propagation_seconds"] == 120
+    assert directions[("alpha", "beta")]["fastest_occurrences"][0][
+        "source_post_url"
+    ] == "https://t.me/alpha/10"

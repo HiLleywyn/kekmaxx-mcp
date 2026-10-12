@@ -17,6 +17,7 @@ import re
 from collections import Counter, defaultdict
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
+from statistics import median
 from urllib.parse import urlparse, urlunparse
 
 TELEGRAM_HOSTS = {"t.me", "telegram.me", "www.t.me", "www.telegram.me"}
@@ -325,6 +326,67 @@ def analyze_public_post_timelines(
         )
     )
 
+    relays_by_direction: defaultdict[tuple[str, str], list[dict[str, object]]] = (
+        defaultdict(list)
+    )
+    for occurrence in resolved_direct_links:
+        if int(occurrence["propagation_seconds"]) < 0:
+            continue
+        relays_by_direction[
+            (
+                str(occurrence["source_channel"]),
+                str(occurrence["carrier_channel"]),
+            )
+        ].append(occurrence)
+
+    reciprocal_channel_pairs = []
+    seen_pairs: set[tuple[str, str]] = set()
+    for source, carrier in relays_by_direction:
+        pair = tuple(sorted((source, carrier), key=str.lower))
+        if pair in seen_pairs or (carrier, source) not in relays_by_direction:
+            continue
+        seen_pairs.add(pair)
+        directions = []
+        for direction_source, direction_carrier in (
+            (pair[0], pair[1]),
+            (pair[1], pair[0]),
+        ):
+            occurrences = sorted(
+                relays_by_direction[(direction_source, direction_carrier)],
+                key=lambda item: (
+                    int(item["propagation_seconds"]),
+                    str(item["source_post_url"]),
+                    str(item["carrier_post_url"]),
+                ),
+            )
+            delays = [int(item["propagation_seconds"]) for item in occurrences]
+            directions.append(
+                {
+                    "source_channel": direction_source,
+                    "carrier_channel": direction_carrier,
+                    "occurrence_count": len(occurrences),
+                    "min_propagation_seconds": min(delays),
+                    "median_propagation_seconds": median(delays),
+                    "max_propagation_seconds": max(delays),
+                    "fastest_occurrences": occurrences[:3],
+                }
+            )
+        reciprocal_channel_pairs.append(
+            {
+                "channels": list(pair),
+                "total_occurrences": sum(
+                    int(item["occurrence_count"]) for item in directions
+                ),
+                "directions": directions,
+            }
+        )
+    reciprocal_channel_pairs.sort(
+        key=lambda item: (
+            -int(item["total_occurrences"]),
+            tuple(str(value).lower() for value in item["channels"]),
+        )
+    )
+
     return {
         "generated_at_utc": datetime.now(UTC).isoformat(),
         "source_files": sorted(source_files),
@@ -350,6 +412,7 @@ def analyze_public_post_timelines(
             ),
         ),
         "source_syndication_groups": source_syndication_groups,
+        "reciprocal_channel_pairs": reciprocal_channel_pairs,
         "outbound_telegram_links": [
             {
                 "source": source,
@@ -371,6 +434,8 @@ def analyze_public_post_timelines(
             "Shared public links can reflect common sourcing rather than common control.",
             "Near-simultaneous relays establish synchronized distribution, not whether the "
             "mechanism was manual, automated, or centrally controlled.",
+            "Reciprocal relays establish two-way public sourcing, not common ownership, "
+            "payment, or shared administration.",
             "Missing public-preview posts can reflect deletion, moderation, or collection gaps.",
         ],
     }

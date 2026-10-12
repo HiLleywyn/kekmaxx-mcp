@@ -297,6 +297,10 @@ The output also groups one resolved source post relayed by multiple loaded
 channels, including source-to-carrier delays and the spread between carrier
 timestamps. This measures synchronized syndication; it does not determine
 whether the workflow was manual, automated, or centrally controlled.
+It also summarizes channel pairs with resolved relays in both directions,
+including per-direction counts, delay statistics, and the three fastest exact
+examples. Reciprocal sourcing can identify an editorial loop, but it does not
+establish common ownership, payment, or shared administration.
 
 Resolve one already-known public X status into a bounded JSON snapshot:
 
