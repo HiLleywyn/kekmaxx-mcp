@@ -6,10 +6,12 @@ import argparse
 import csv
 import io
 import re
-import sys
 from pathlib import Path
 
+import requests
 from remotezip import RemoteZip
+
+from .safety import public_get
 
 ARCHIVE_URL = (
     "https://storage.googleapis.com/political-csv/google-political-ads-transparency-bundle.zip"
@@ -22,13 +24,39 @@ ALLOWED_MEMBERS = {
 }
 
 
+class GuardedArchiveSession:
+    """Range requests use the same pinned public transport as ordinary collection."""
+
+    def get(self, url, stream=True, headers=None, **kwargs):
+        final, status, response_headers, body = public_get(
+            url, headers=headers, max_bytes=100_000_000, timeout=120
+        )
+        response = requests.Response()
+        response.status_code = status
+        response.headers.update(response_headers)
+        response.url = final
+        response.raw = io.BytesIO(body)
+        response._content = body
+        return response
+
+
+def _member(archive, name):
+    info = archive.getinfo(name)
+    if info.file_size > 2_000_000_000 or info.compress_size > 100_000_000:
+        raise ValueError("Archive member exceeds collection budget")
+    return archive.open(name)
+
+
 def find_advertisers(terms: list[str], max_results: int = 50) -> list[dict[str, str]]:
     if not terms or len(terms) > 20:
         raise ValueError("Provide between 1 and 20 search terms")
     max_results = min(max(int(max_results), 1), 200)
     patterns = [re.compile(re.escape(term), re.IGNORECASE) for term in terms]
     matches: list[dict[str, str]] = []
-    with RemoteZip(ARCHIVE_URL) as archive, archive.open(ADVERTISER_MEMBER) as raw:
+    with (
+        RemoteZip(ARCHIVE_URL, session=GuardedArchiveSession()) as archive,
+        _member(archive, ADVERTISER_MEMBER) as raw,
+    ):
         reader = csv.DictReader(io.TextIOWrapper(raw, encoding="utf-8-sig", newline=""))
         for row in reader:
             haystack = " | ".join((row.get("Advertiser_Name", ""), row.get("Public_IDs_List", "")))
@@ -44,10 +72,13 @@ def extract_member(member: str, advertiser_ids: set[str], output: Path) -> int:
         raise ValueError(f"Unsupported archive member: {member}")
     if not advertiser_ids or len(advertiser_ids) > 100:
         raise ValueError("Provide between 1 and 100 advertiser IDs")
-    csv.field_size_limit(sys.maxsize)
+    csv.field_size_limit(1_000_000)
     matched = 0
     output.parent.mkdir(parents=True, exist_ok=True)
-    with RemoteZip(ARCHIVE_URL) as archive, archive.open(member) as raw:
+    with (
+        RemoteZip(ARCHIVE_URL, session=GuardedArchiveSession()) as archive,
+        _member(archive, member) as raw,
+    ):
         reader = csv.DictReader(io.TextIOWrapper(raw, encoding="utf-8-sig", newline=""))
         if not reader.fieldnames or "Advertiser_ID" not in reader.fieldnames:
             raise RuntimeError("Archive member has no Advertiser_ID column")

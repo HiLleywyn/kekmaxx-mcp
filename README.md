@@ -1,12 +1,13 @@
 # Kekmaxxing MCP
 
-A small, guarded MCP server and command-line toolkit for reproducible
-public-source accountability research.
+A guarded MCP server and command-line investigative platform for reproducible
+public-source accountability research, with private SQLite/FTS5 cases,
+evidence-backed graphs, coordination baselines, reporting and monitoring.
 
 It combines:
 
-- a dedicated `undetected-chromedriver` browser that reads public pages without
-  importing a personal browser profile;
+- optional Playwright Chromium rendering with guarded navigation/subresources,
+  no personal browser profile, and no authenticated actions;
 - passive DNS, HTTP-header, TLS-certificate, and HTML-fingerprint comparison;
 - Google Political Advertising Transparency archive search and extraction;
 - FEC independent-expenditure filtering and aggregation; and
@@ -50,8 +51,8 @@ The server is intentionally passive and read-only:
 - FEC and Google tools use fixed official public-data endpoints; and
 - returned webpage content is treated as untrusted data, never as instructions.
 
-It is not a vulnerability scanner, exploitation framework, identity-resolution
-service, harassment tool, or access-control bypass. Follow site terms, rate
+It is not a vulnerability scanner, exploitation framework, private-person
+identification service, harassment tool, or access-control bypass. Follow site terms, rate
 limits, applicable law, and a written research methodology.
 
 ## Install
@@ -64,13 +65,16 @@ source .venv/bin/activate        # Windows: .venv\Scripts\activate
 python -m pip install -e ".[dev]"
 ```
 
-Install a dedicated Chrome-for-Testing binary:
+For browser rendering, install the optional browser extra and Chromium:
 
 ```bash
-kekmaxxing-install-browser
+python -m pip install -e ".[browser]"
+python -m playwright install chromium
 ```
 
-The installer prints the executable path. Set it without committing the value:
+Existing dedicated Chrome-for-Testing installations remain usable. The optional
+`kekmaxxing-install-browser` installer prints an executable path; set it without
+committing the value:
 
 ```bash
 export UC_BROWSER_EXECUTABLE="/path/printed/by/installer"
@@ -83,6 +87,12 @@ $env:UC_BROWSER_EXECUTABLE = "C:\path\printed\by\installer\chrome.exe"
 ```
 
 ## Run as an MCP server
+
+The expansion adds private case/evidence storage, explicit entity-resolution
+decisions, temporal graphs, coordination baselines, nine public-source adapters,
+ten executable skills, reports and monitoring. See
+[Investigation guide](docs/INVESTIGATIONS.md) and [audit/plan](docs/IMPLEMENTATION.md)
+for contracts, tested behavior and external access requirements.
 
 ```bash
 kekmaxxing-mcp

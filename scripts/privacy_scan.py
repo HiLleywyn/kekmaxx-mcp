@@ -45,7 +45,9 @@ PATTERNS = {
 def scan(root: Path, forbidden: list[str]) -> list[str]:
     findings: list[str] = []
     for path in root.rglob("*"):
-        if not path.is_file() or any(part in SKIP_PARTS for part in path.parts):
+        if not path.is_file() or any(
+            part in SKIP_PARTS or part.startswith(".venv-") for part in path.parts
+        ):
             continue
         if path.suffix.lower() not in TEXT_SUFFIXES or path.stat().st_size > 2_000_000:
             continue

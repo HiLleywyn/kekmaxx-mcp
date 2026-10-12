@@ -1,113 +1,98 @@
-"""Dedicated, profile-free Chromium reader."""
+"""Profile-free rendering: every HTTP request is fulfilled by guarded collection."""
 
 from __future__ import annotations
 
-import contextlib
 import os
-import sys
-import time
 from pathlib import Path
 
-import undetected_chromedriver as uc
+import httpx
 
-from .safety import validate_public_url
-
-
-class ManagedChrome(uc.Chrome):
-    """Avoid duplicate shutdown work in undetected-chromedriver destructors."""
-
-    def __del__(self) -> None:
-        pass
+from .safety import public_get, validate_public_url
 
 
 def default_browser_path() -> Path:
     root = Path.home() / ".local" / "share" / "kekmaxxing-mcp" / "chrome"
-    windows = root / "chrome-win64" / "chrome.exe"
-    linux = root / "chrome-linux64" / "chrome"
-    mac_arm = (
-        root
-        / "chrome-mac-arm64"
-        / "Google Chrome for Testing.app"
-        / "Contents"
-        / "MacOS"
-        / "Google Chrome for Testing"
-    )
-    mac_x64 = (
-        root
-        / "chrome-mac-x64"
-        / "Google Chrome for Testing.app"
-        / "Contents"
-        / "MacOS"
-        / "Google Chrome for Testing"
-    )
-    for candidate in (windows, linux, mac_arm, mac_x64):
-        if candidate.is_file():
-            return candidate
-    return windows if os.name == "nt" else linux
+    return root / ("chrome-win64/chrome.exe" if os.name == "nt" else "chrome-linux64/chrome")
 
 
 def find_browser() -> Path:
-    configured = os.environ.get("UC_BROWSER_EXECUTABLE")
-    candidate = Path(configured).expanduser() if configured else default_browser_path()
+    candidate = Path(os.environ.get("UC_BROWSER_EXECUTABLE") or default_browser_path())
     if not candidate.is_file():
-        raise RuntimeError(
-            "Dedicated browser not found. Run kekmaxxing-install-browser or set "
-            "UC_BROWSER_EXECUTABLE to a dedicated Chrome/Chromium executable."
-        )
+        raise RuntimeError("Install Playwright Chromium or set UC_BROWSER_EXECUTABLE")
     return candidate
+
+
+def guarded_route(route, budget: dict) -> None:
+    """Navigation, redirects and subresources never bypass the HTTP guard."""
+    request = route.request
+    if request.method not in {"GET", "HEAD"} or budget["requests"] >= 150:
+        route.abort()
+        return
+    budget["requests"] += 1
+    try:
+        url, status, headers, body = public_get(
+            request.url, max_bytes=5_000_000, timeout=20, retries=0
+        )
+        budget["bytes"] += len(body)
+        if budget["bytes"] > 25_000_000:
+            raise ValueError("Browser collection budget exhausted")
+        if url != request.url:
+            route.fulfill(status=302, headers={"location": url}, body=b"")
+        else:
+            safe = {
+                k: v
+                for k, v in headers.items()
+                if k.lower()
+                not in {
+                    "set-cookie",
+                    "content-encoding",
+                    "content-length",
+                    "transfer-encoding",
+                    "connection",
+                }
+            }
+            route.fulfill(status=status, headers=safe, body=body)
+    except (ValueError, RuntimeError, OSError, httpx.HTTPError):
+        route.abort()
 
 
 def browse(url: str, wait_seconds: float = 1.0, max_chars: int = 20_000) -> dict:
     target = validate_public_url(url)
-    wait_seconds = min(max(float(wait_seconds), 0.0), 15.0)
-    max_chars = min(max(int(max_chars), 1_000), 100_000)
-
-    options = uc.ChromeOptions()
-    for argument in (
-        "--headless=new",
-        "--disable-gpu",
-        "--disable-extensions",
-        "--incognito",
-        "--no-first-run",
-        "--no-default-browser-check",
-        "--log-level=3",
-        "--window-size=1440,1200",
-    ):
-        options.add_argument(argument)
-
-    browser: ManagedChrome | None = None
     try:
-        with contextlib.redirect_stdout(sys.stderr):
-            browser = ManagedChrome(
-                browser_executable_path=str(find_browser()),
-                options=options,
-                use_subprocess=True,
-            )
-            browser.set_page_load_timeout(45)
-            browser.get(target.url)
-            if wait_seconds:
-                time.sleep(wait_seconds)
-            final = validate_public_url(browser.current_url)
-            text = (
-                browser.execute_script("return document.body ? document.body.innerText : '';") or ""
-            )
-            links = browser.execute_script(
-                """
-                return Array.from(document.links).slice(0, 250).map((link) => ({
-                  text: (link.innerText || link.getAttribute('aria-label') || '').trim(),
-                  url: link.href
-                }));
-                """
-            )
+        from playwright.sync_api import sync_playwright
+    except ImportError as exc:
+        raise RuntimeError("Install kekmaxxing-mcp[browser] and Playwright Chromium") from exc
+    budget = {"requests": 0, "bytes": 0}
+    configured = os.environ.get("UC_BROWSER_EXECUTABLE")
+    legacy = default_browser_path()
+    executable = configured or (str(legacy) if legacy.is_file() else None)
+    with sync_playwright() as pw:
+        browser = pw.chromium.launch(
+            headless=True,
+            executable_path=executable,
+            args=["--disable-quic", "--force-webrtc-ip-handling-policy=disable_non_proxied_udp"],
+        )
+        try:
+            context = browser.new_context(service_workers="block", accept_downloads=False)
+            context.route("**/*", lambda route: guarded_route(route, budget))
+            context.route_web_socket("**/*", lambda ws: ws.close())
+            page = context.new_page()
+            page.goto(target.url, timeout=45_000, wait_until="domcontentloaded")
+            page.wait_for_timeout(min(max(float(wait_seconds), 0), 15) * 1000)
+            final = validate_public_url(page.url)
+            text = page.locator("body").inner_text(timeout=5000)
+            cap = min(max(int(max_chars), 1000), 100_000)
             return {
                 "requested_url": target.url,
                 "final_url": final.url,
-                "title": browser.title,
-                "text": text[:max_chars],
-                "text_truncated": len(text) > max_chars,
-                "links": links,
+                "title": page.title(),
+                "text": text[:cap],
+                "text_truncated": len(text) > cap,
+                "links": page.locator("a").evaluate_all(
+                    "(nodes) => nodes.slice(0,250).map(x=>({text:x.innerText,url:x.href}))"
+                ),
+                "collection_budget": budget,
+                "trust": "untrusted source content",
             }
-    finally:
-        if browser is not None:
-            with contextlib.suppress(Exception):
-                browser.quit()
+        finally:
+            browser.close()

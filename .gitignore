@@ -1,4 +1,5 @@
 .venv/
+.venv-*/
 venv/
 __pycache__/
 *.py[cod]
@@ -42,4 +43,10 @@ research/
 *.jpeg
 *.mp4
 *.zip
+cases/
+exports/
+*.parquet
+*.graphml
+*.gexf
+*.jsonl
 

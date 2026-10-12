@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "kekmaxxing-mcp"
-version = "0.1.0"
+version = "0.2.0"
 description = "Guarded MCP and CLI toolkit for reproducible public-source accountability research"
 readme = "README.md"
 license = { file = "LICENSE" }
@@ -23,14 +23,20 @@ dependencies = [
   "beautifulsoup4>=4.12,<5",
   "dnspython>=2.6,<3",
   "httpx>=0.27,<1",
+  "httpcore>=1.0,<2",
   "mcp>=1.12,<2",
   "pypdf>=6,<7",
   "remotezip>=0.12,<1",
-  "undetected-chromedriver==3.5.5",
+  "networkx>=3.2,<4",
+  "pydantic>=2.8,<3",
 ]
 
 [project.optional-dependencies]
+browser = ["playwright>=1.48,<2"]
+semantic = ["sentence-transformers>=3,<6"]
+columnar = ["pyarrow>=18,<24"]
 dev = [
+  "build>=1.2,<2",
   "pytest>=8,<9",
   "ruff>=0.8,<1",
 ]
@@ -52,12 +58,17 @@ kekmaxxing-snapshot-delta = "kekmaxxing_mcp.snapshot_delta:main"
 kekmaxxing-rdap = "kekmaxxing_mcp.rdap_public:main"
 kekmaxxing-tse-accounts = "kekmaxxing_mcp.tse_accounts:main"
 kekmaxxing-install-browser = "kekmaxxing_mcp.install_browser:main"
+kekmaxxing-investigate = "kekmaxxing_mcp.investigate:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/kekmaxxing_mcp"]
 
+[tool.hatch.build.targets.wheel.force-include]
+"skills" = "kekmaxxing_mcp/skills"
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+markers = ["integration: opt-in public network checks", "performance: bounded synthetic performance checks"]
 
 [tool.ruff]
 line-length = 100

@@ -328,5 +328,10 @@ def main() -> None:
     mcp.run(transport="stdio")
 
 
+from .intelligence_tools import register  # noqa: E402
+
+register(mcp)
+
+
 if __name__ == "__main__":
     main()

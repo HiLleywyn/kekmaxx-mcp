@@ -3,13 +3,14 @@
 from __future__ import annotations
 
 import argparse
+import json
 import platform
 import stat
 import tempfile
 import zipfile
 from pathlib import Path
 
-import httpx
+from .safety import public_get
 
 MANIFEST_URL = "https://googlechromelabs.github.io/chrome-for-testing/last-known-good-versions-with-downloads.json"
 
@@ -51,19 +52,25 @@ def main() -> int:
     )
     args = parser.parse_args()
     target = platform_name()
-    manifest = httpx.get(MANIFEST_URL, timeout=30).raise_for_status().json()
+    _, status, _, body = public_get(MANIFEST_URL)
+    if status != 200:
+        raise RuntimeError(f"Browser manifest returned HTTP {status}")
+    manifest = json.loads(body)
     downloads = manifest["channels"]["Stable"]["downloads"]["chrome"]
     url = next(item["url"] for item in downloads if item["platform"] == target)
     destination = args.destination.expanduser().resolve()
     destination.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix="kekmaxxing-browser-") as temporary:
         archive = Path(temporary) / "chrome.zip"
-        with httpx.stream("GET", url, timeout=120, follow_redirects=True) as response:
-            response.raise_for_status()
-            with archive.open("wb") as handle:
-                for chunk in response.iter_bytes():
-                    handle.write(chunk)
+        _, status, _, body = public_get(url, max_bytes=500_000_000, timeout=120)
+        if status != 200:
+            raise RuntimeError(f"Browser download returned HTTP {status}")
+        archive.write_bytes(body)
         with zipfile.ZipFile(archive) as zipped:
+            for member in zipped.infolist():
+                resolved = (destination / member.filename).resolve()
+                if not resolved.is_relative_to(destination) or member.file_size > 1_000_000_000:
+                    raise ValueError("Unsafe browser archive entry")
             zipped.extractall(destination)
     executable = executable_path(destination, target)
     if not executable.is_file():

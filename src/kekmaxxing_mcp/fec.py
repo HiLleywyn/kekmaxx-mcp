@@ -15,7 +15,7 @@ from pathlib import Path
 
 import httpx
 
-from .safety import public_get, validate_public_url
+from .safety import bounded_body, public_client, public_get
 
 FILE_NUMBER_RE = re.compile(r"^[1-9][0-9]{6,8}$")
 COMMITTEE_ID_RE = re.compile(r"^C[0-9]{8}$")
@@ -171,19 +171,16 @@ def _openfec_schedule_e_page(params: dict[str, object], api_key: str) -> dict:
 
 def _openfec_page(url: str, params: dict[str, object], api_key: str) -> dict:
     """Fetch one fixed-endpoint OpenFEC page without exposing the credential."""
-    validate_public_url(url)
     safe_params = dict(params)
     safe_params["api_key"] = api_key
     try:
-        response = httpx.get(
-            url,
-            params=safe_params,
-            headers={"User-Agent": "Kekmaxxing-MCP/0.1 (+public-source-research)"},
-            follow_redirects=False,
-            timeout=60,
-        )
-    except httpx.HTTPError as exc:
-        raise RuntimeError("OpenFEC request failed") from exc
+        with public_client(60) as client:
+            with client.stream("GET", url, params=safe_params) as incoming:
+                response = httpx.Response(
+                    incoming.status_code, content=bounded_body(incoming, 10_000_000)
+                )
+    except httpx.HTTPError:
+        raise RuntimeError("OpenFEC request failed") from None
     if response.status_code != 200:
         raise RuntimeError(f"OpenFEC returned HTTP {response.status_code}")
     try:
@@ -201,12 +198,8 @@ def summarize_treasurer_service(rows: list[dict], cycle: int) -> dict:
     A cluster is an administrative baseline lead. It does not establish common
     strategic control, legal affiliation, or coordination.
     """
-    normalized = [
-        {field: row.get(field) for field in TREASURER_COMMITTEE_FIELDS} for row in rows
-    ]
-    normalized.sort(
-        key=lambda row: (str(row.get("first_f1_date") or ""), str(row["committee_id"]))
-    )
+    normalized = [{field: row.get(field) for field in TREASURER_COMMITTEE_FIELDS} for row in rows]
+    normalized.sort(key=lambda row: (str(row.get("first_f1_date") or ""), str(row["committee_id"])))
     by_date: dict[str, list[dict[str, str | None]]] = defaultdict(list)
     for row in normalized:
         first_f1 = str(row.get("first_f1_date") or "")
@@ -228,9 +221,7 @@ def summarize_treasurer_service(rows: list[dict], cycle: int) -> dict:
     return {
         "committee_count": len(normalized),
         "new_in_cycle_count": sum(
-            1
-            for row in normalized
-            if str(row.get("first_f1_date") or "").startswith(str(cycle))
+            1 for row in normalized if str(row.get("first_f1_date") or "").startswith(str(cycle))
         ),
         "same_day_first_f1_clusters": clusters,
         "committees": normalized,
@@ -478,9 +469,7 @@ def main() -> int:
         )
         return 0
     if args.command == "api-schedule-e":
-        payload = load_openfec_schedule_e(
-            args.committee_id, args.cycle, max_pages=args.max_pages
-        )
+        payload = load_openfec_schedule_e(args.committee_id, args.cycle, max_pages=args.max_pages)
         args.output.parent.mkdir(parents=True, exist_ok=True)
         args.output.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
         print(
