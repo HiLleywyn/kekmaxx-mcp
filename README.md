@@ -10,7 +10,8 @@ It combines:
 - passive DNS, HTTP-header, TLS-certificate, and HTML-fingerprint comparison;
 - Google Political Advertising Transparency archive search and extraction;
 - FEC independent-expenditure filtering and aggregation; and
-- source-linked normalization of Schedule E rows from public FEC electronic filings; and
+- source-linked normalization of Schedule E rows from public FEC electronic filings;
+- read-only FCC public-file metadata search for known station/entity IDs; and
 - an optional dedicated-WSL/WireGuard layout that keeps research traffic
   separate from ordinary browsers and Docker workloads.
 
@@ -94,6 +95,10 @@ Available MCP tools:
 - `google_ads_find_advertisers`
 - `fec_independent_expenditure_summary`
 - `fec_filing_schedule_e`
+- `fec_api_schedule_e`
+- `fcc_search_entity_files`
+- `fcc_file_details`
+- `fcc_public_file_download_url`
 
 ## Data CLIs
 
@@ -155,6 +160,27 @@ work against primary filing CSV/HTML and FEC bulk exports.
 
 Schedule E amounts are reported candidate allocations. The tool does not label
 them as invoices, cash payments, or verified advertising delivery.
+
+Search FCC political-file metadata for a known station/entity ID:
+
+```bash
+kekmaxxing-fcc search --entity-id 12345 --search-key "Example Committee"
+```
+
+Retrieve metadata for an already-known FCC file UUID or construct the official
+PDF URL from folder and file-manager UUIDs returned by the API:
+
+```bash
+kekmaxxing-fcc details --entity-id 12345 --file-id 00000000-0000-0000-0000-000000000000
+kekmaxxing-fcc download-url \
+  --folder-id 00000000-0000-0000-0000-000000000000 \
+  --file-manager-id 00000000-0000-0000-0000-000000000000
+```
+
+The FCC search endpoint may expose metadata even when its separate document CDN
+returns HTTP 403. Treat a title or file record as proof that metadata exists,
+not as proof of the document's unseen contents. The client does not enumerate
+stations or folders and does not try to bypass download controls.
 
 See [Methodology](docs/METHODOLOGY.md), [VPN isolation](docs/VPN-ISOLATION.md),
 and [privacy and release checks](docs/PRIVACY.md).

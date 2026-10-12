@@ -17,7 +17,6 @@ import httpx
 
 from .safety import public_get, validate_public_url
 
-
 FILE_NUMBER_RE = re.compile(r"^[1-9][0-9]{6,8}$")
 COMMITTEE_ID_RE = re.compile(r"^C[0-9]{8}$")
 OPENFEC_SCHEDULE_E_URL = "https://api.open.fec.gov/v1/schedules/schedule_e/"

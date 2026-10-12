@@ -38,6 +38,7 @@ dev = [
 kekmaxxing-mcp = "kekmaxxing_mcp.server:main"
 kekmaxxing-google-ads = "kekmaxxing_mcp.google_ads:main"
 kekmaxxing-fec = "kekmaxxing_mcp.fec:main"
+kekmaxxing-fcc = "kekmaxxing_mcp.fcc:main"
 kekmaxxing-install-browser = "kekmaxxing_mcp.install_browser:main"
 
 [tool.hatch.build.targets.wheel]

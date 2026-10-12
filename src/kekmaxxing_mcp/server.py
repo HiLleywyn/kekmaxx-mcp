@@ -5,6 +5,7 @@ from __future__ import annotations
 from mcp.server.fastmcp import FastMCP
 
 from .browser import browse
+from .fcc import build_download_url, get_file_details, search_entity_files
 from .fec import (
     load_openfec_schedule_e,
     load_rows,
@@ -84,6 +85,24 @@ def fec_api_schedule_e(committee_id: str, cycle: int, max_pages: int = 100) -> d
     accepted as a tool argument and is never returned in tool output.
     """
     return load_openfec_schedule_e(committee_id, cycle, max_pages=max_pages)
+
+
+@mcp.tool()
+def fcc_search_entity_files(entity_id: str, search_key: str) -> dict:
+    """Search FCC public-file metadata for a known station/entity ID and term."""
+    return search_entity_files(entity_id, search_key)
+
+
+@mcp.tool()
+def fcc_file_details(entity_id: str, file_id: str) -> dict:
+    """Retrieve metadata for an already-known FCC public-file identifier."""
+    return get_file_details(entity_id, file_id)
+
+
+@mcp.tool()
+def fcc_public_file_download_url(folder_id: str, file_manager_id: str) -> str:
+    """Build an FCC public PDF URL from identifiers returned by file metadata."""
+    return build_download_url(folder_id, file_manager_id)
 
 
 def main() -> None:
