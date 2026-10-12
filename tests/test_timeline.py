@@ -222,3 +222,58 @@ def test_timeline_reports_reciprocal_resolved_relays(tmp_path) -> None:
     assert directions[("alpha", "beta")]["fastest_occurrences"][0][
         "source_post_url"
     ] == "https://t.me/alpha/10"
+
+
+def test_timeline_reports_reciprocal_public_channel_mentions(tmp_path) -> None:
+    alpha = tmp_path / "alpha.csv"
+    bravo = tmp_path / "bravo.csv"
+    _write_posts(
+        alpha,
+        [
+            {
+                "channel": "alpha",
+                "datetime_utc": "2026-10-08T12:00:00+00:00",
+                "post_url": "https://t.me/alpha/10",
+                "text": "Follow @bravo for more public reporting. " + "A" * 80,
+                "outbound_urls": json.dumps(["https://t.me/bravo"]),
+            }
+        ],
+    )
+    _write_posts(
+        bravo,
+        [
+            {
+                "channel": "bravo",
+                "datetime_utc": "2026-10-08T13:00:00+00:00",
+                "post_url": "https://t.me/bravo/20",
+                "text": "See @alpha for the related public channel. " + "B" * 80,
+                "outbound_urls": "[]",
+            }
+        ],
+    )
+
+    result = analyze_public_post_timelines(
+        [alpha, bravo],
+        baseline_start="2026-10-06",
+        event_start="2026-10-08",
+        event_end="2026-10-09",
+    )
+
+    assert result["public_channel_mentions"] == [
+        {"source": "alpha", "target": "bravo", "occurrences": 1},
+        {"source": "bravo", "target": "alpha", "occurrences": 1},
+    ]
+    pair = result["reciprocal_channel_mention_pairs"][0]
+    assert pair["channels"] == ["alpha", "bravo"]
+    assert pair["total_occurrences"] == 2
+    directions = {
+        (item["source_channel"], item["target_channel"]): item
+        for item in pair["directions"]
+    }
+    assert directions[("alpha", "bravo")]["evidence_counts"] == {
+        "telegram_url": 1,
+        "text_handle": 1,
+    }
+    assert directions[("bravo", "alpha")]["evidence_counts"] == {
+        "text_handle": 1
+    }

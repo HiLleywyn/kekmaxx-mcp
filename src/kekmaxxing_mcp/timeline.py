@@ -22,6 +22,7 @@ from urllib.parse import urlparse, urlunparse
 
 TELEGRAM_HOSTS = {"t.me", "telegram.me", "www.t.me", "www.telegram.me"}
 IGNORED_LINK_HOSTS = TELEGRAM_HOSTS | {"telegram.org", "www.telegram.org"}
+PUBLIC_HANDLE_RE = re.compile(r"(?<![\w@])@([A-Za-z0-9_]{5,32})\b")
 
 
 def _parse_timestamp(value: str) -> datetime:
@@ -127,6 +128,8 @@ def analyze_public_post_timelines(
     direct_links: Counter[tuple[str, str]] = Counter()
     resolved_direct_links: list[dict[str, object]] = []
     telegram_links: Counter[tuple[str, str]] = Counter()
+    channel_mentions: Counter[tuple[str, str]] = Counter()
+    channel_mention_occurrences: list[dict[str, object]] = []
     text_occurrences: defaultdict[str, list[dict[str, str]]] = defaultdict(list)
 
     for row in rows:
@@ -149,6 +152,11 @@ def analyze_public_post_timelines(
 
         outbound = row["outbound_urls"]
         assert isinstance(outbound, list)
+        mentioned_channels: defaultdict[str, set[str]] = defaultdict(set)
+        for match in PUBLIC_HANDLE_RE.finditer(text_value):
+            mentioned_channel = match.group(1).lower()
+            if mentioned_channel != channel.lower():
+                mentioned_channels[mentioned_channel].add("text_handle")
         for raw_url in outbound:
             canonical = _canonical_url(str(raw_url))
             if canonical is None:
@@ -157,6 +165,7 @@ def analyze_public_post_timelines(
             hostname = (parsed.hostname or "").lower()
             linked_channel = _telegram_channel(canonical)
             if linked_channel and linked_channel != channel.lower():
+                mentioned_channels[linked_channel].add("telegram_url")
                 telegram_links[(channel, linked_channel)] += 1
                 if linked_channel in channel_keys:
                     direct_links[(channel, channel_keys[linked_channel])] += 1
@@ -184,6 +193,20 @@ def analyze_public_post_timelines(
                     "channel": channel,
                     "datetime_utc": stamp.isoformat(),
                     "post_url": str(row["post_url"]),
+                }
+            )
+
+        for mentioned_channel, evidence in mentioned_channels.items():
+            display_target = channel_keys.get(mentioned_channel, mentioned_channel)
+            channel_mentions[(channel, display_target)] += 1
+            channel_mention_occurrences.append(
+                {
+                    "source_channel": channel,
+                    "target_channel": display_target,
+                    "target_in_dataset": mentioned_channel in channel_keys,
+                    "source_post_url": str(row["post_url"]),
+                    "datetime_utc": stamp.isoformat(),
+                    "evidence": sorted(evidence),
                 }
             )
 
@@ -387,6 +410,68 @@ def analyze_public_post_timelines(
         )
     )
 
+    mentions_by_direction: defaultdict[tuple[str, str], list[dict[str, object]]] = (
+        defaultdict(list)
+    )
+    for occurrence in channel_mention_occurrences:
+        if not bool(occurrence["target_in_dataset"]):
+            continue
+        mentions_by_direction[
+            (
+                str(occurrence["source_channel"]),
+                str(occurrence["target_channel"]),
+            )
+        ].append(occurrence)
+
+    reciprocal_channel_mention_pairs = []
+    seen_mention_pairs: set[tuple[str, str]] = set()
+    for source, target in mentions_by_direction:
+        pair = tuple(sorted((source, target), key=str.lower))
+        if pair in seen_mention_pairs or (target, source) not in mentions_by_direction:
+            continue
+        seen_mention_pairs.add(pair)
+        directions = []
+        for direction_source, direction_target in (
+            (pair[0], pair[1]),
+            (pair[1], pair[0]),
+        ):
+            occurrences = sorted(
+                mentions_by_direction[(direction_source, direction_target)],
+                key=lambda item: (
+                    str(item["datetime_utc"]),
+                    str(item["source_post_url"]),
+                ),
+            )
+            evidence_counts: Counter[str] = Counter()
+            for occurrence in occurrences:
+                evidence_counts.update(str(value) for value in occurrence["evidence"])
+            directions.append(
+                {
+                    "source_channel": direction_source,
+                    "target_channel": direction_target,
+                    "occurrence_count": len(occurrences),
+                    "first_datetime_utc": occurrences[0]["datetime_utc"],
+                    "last_datetime_utc": occurrences[-1]["datetime_utc"],
+                    "evidence_counts": dict(sorted(evidence_counts.items())),
+                    "sample_occurrences": occurrences[:5],
+                }
+            )
+        reciprocal_channel_mention_pairs.append(
+            {
+                "channels": list(pair),
+                "total_occurrences": sum(
+                    int(item["occurrence_count"]) for item in directions
+                ),
+                "directions": directions,
+            }
+        )
+    reciprocal_channel_mention_pairs.sort(
+        key=lambda item: (
+            -int(item["total_occurrences"]),
+            tuple(str(value).lower() for value in item["channels"]),
+        )
+    )
+
     return {
         "generated_at_utc": datetime.now(UTC).isoformat(),
         "source_files": sorted(source_files),
@@ -413,6 +498,21 @@ def analyze_public_post_timelines(
         ),
         "source_syndication_groups": source_syndication_groups,
         "reciprocal_channel_pairs": reciprocal_channel_pairs,
+        "public_channel_mentions": [
+            {"source": source, "target": target, "occurrences": count}
+            for (source, target), count in sorted(
+                channel_mentions.items(), key=lambda item: (-item[1], item[0])
+            )
+        ],
+        "public_channel_mention_occurrences": sorted(
+            channel_mention_occurrences,
+            key=lambda item: (
+                str(item["datetime_utc"]),
+                str(item["source_channel"]),
+                str(item["target_channel"]),
+            ),
+        ),
+        "reciprocal_channel_mention_pairs": reciprocal_channel_mention_pairs,
         "outbound_telegram_links": [
             {
                 "source": source,
@@ -436,6 +536,8 @@ def analyze_public_post_timelines(
             "mechanism was manual, automated, or centrally controlled.",
             "Reciprocal relays establish two-way public sourcing, not common ownership, "
             "payment, or shared administration.",
+            "Reciprocal public channel mentions can reflect promotion, attribution, or "
+            "ordinary linking; they do not by themselves establish payment or control.",
             "Missing public-preview posts can reflect deletion, moderation, or collection gaps.",
         ],
     }

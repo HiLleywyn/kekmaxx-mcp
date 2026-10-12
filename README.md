@@ -301,6 +301,10 @@ It also summarizes channel pairs with resolved relays in both directions,
 including per-direction counts, delay statistics, and the three fastest exact
 examples. Reciprocal sourcing can identify an editorial loop, but it does not
 establish common ownership, payment, or shared administration.
+The same report deduplicates public `@handle` and Telegram-channel mentions per
+post and summarizes reciprocal mention pairs. That can expose recurring
+cross-promotion even when an invite link hides the destination handle, while
+keeping promotion, attribution, payment, and control as separate questions.
 
 Resolve one already-known public X status into a bounded JSON snapshot:
 
