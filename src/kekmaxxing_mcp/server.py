@@ -17,6 +17,7 @@ from .fec import (
 from .google_ads import find_advertisers
 from .passive import compare_pages, page_fingerprint, resolve_records, tls_certificate
 from .procurement import load_fpds_award_history, load_usaspending_award
+from .telegram_public import probe_public_telegram_history
 from .timeline import analyze_public_post_timelines as analyze_timelines
 from .wordpress import (
     map_public_checkout_identities,
@@ -203,6 +204,19 @@ def public_telegram_citation_audit(
     matches are lexical aids and do not establish that a source supports a claim.
     """
     return audit_public_telegram_citations(urls, expected_terms)
+
+
+@mcp.tool()
+def public_telegram_history_probe(
+    channel: str, cursors: list[int], needles: list[str] | None = None
+) -> dict:
+    """Inspect caller-selected public Telegram history pages for literal transitions.
+
+    The tool is bounded to explicit before= cursors. It does not follow
+    pagination, enumerate message IDs, authenticate, join channels, or infer
+    ownership from text matches.
+    """
+    return probe_public_telegram_history(channel, cursors, needles)
 
 
 def main() -> None:
