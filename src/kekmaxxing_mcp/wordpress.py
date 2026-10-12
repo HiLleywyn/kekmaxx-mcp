@@ -1,0 +1,212 @@
+"""Passive inventory helpers for public WordPress REST metadata."""
+
+from __future__ import annotations
+
+import argparse
+import json
+import re
+from collections import defaultdict
+from datetime import UTC, datetime
+from pathlib import Path
+from urllib.parse import urlencode, urlparse
+
+from .safety import public_get, validate_public_url
+
+MAX_SITES = 25
+MAX_TERMS = 25
+MAX_REQUESTS = 250
+AVATAR_HASH_RE = re.compile(r"/avatar/([0-9a-f]{32}|[0-9a-f]{64})(?:[?./]|$)", re.IGNORECASE)
+
+
+def _origin(url: str) -> str:
+    """Return a validated public HTTP(S) origin without retaining a supplied path."""
+    target = validate_public_url(url)
+    parsed = urlparse(target.url)
+    default_port = 443 if parsed.scheme == "https" else 80
+    authority = (
+        target.hostname
+        if target.port == default_port
+        else f"{target.hostname}:{target.port}"
+    )
+    return f"{parsed.scheme}://{authority}"
+
+
+def _json_get(url: str, *, max_bytes: int = 2_000_000) -> tuple[dict[str, str], object]:
+    _, status, headers, body = public_get(url, max_bytes=max_bytes)
+    if status != 200:
+        raise RuntimeError(f"Public WordPress endpoint returned HTTP {status}")
+    try:
+        return headers, json.loads(body.decode("utf-8-sig"))
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise RuntimeError("Public WordPress endpoint returned invalid JSON") from exc
+
+
+def _avatar_hash(user: dict) -> str | None:
+    avatars = user.get("avatar_urls")
+    if not isinstance(avatars, dict):
+        return None
+    for value in avatars.values():
+        if not isinstance(value, str):
+            continue
+        match = AVATAR_HASH_RE.search(value)
+        if match:
+            return match.group(1).lower()
+    return None
+
+
+def load_public_users(site_url: str) -> dict:
+    """Read identities WordPress intentionally exposes through its public users endpoint."""
+    origin = _origin(site_url)
+    query = urlencode(
+        {
+            "per_page": 100,
+            "_fields": "id,name,slug,link,avatar_urls",
+        }
+    )
+    endpoint = f"{origin}/wp-json/wp/v2/users?{query}"
+    _, payload = _json_get(endpoint)
+    if not isinstance(payload, list):
+        raise RuntimeError("WordPress users endpoint returned an unexpected response")
+
+    users = []
+    for item in payload:
+        if not isinstance(item, dict):
+            continue
+        users.append(
+            {
+                "id": item.get("id"),
+                "name": str(item.get("name") or ""),
+                "slug": str(item.get("slug") or ""),
+                "link": str(item.get("link") or ""),
+                "avatar_hash": _avatar_hash(item),
+            }
+        )
+    return {"site": origin, "endpoint": endpoint, "users": users}
+
+
+def map_public_user_fingerprints(site_urls: list[str]) -> dict:
+    """Group public WordPress bylines by repeated Gravatar account fingerprint."""
+    if not site_urls or len(site_urls) > MAX_SITES:
+        raise ValueError(f"site_urls must contain between 1 and {MAX_SITES} public sites")
+
+    sites = []
+    failures = []
+    grouped: defaultdict[str, list[dict]] = defaultdict(list)
+    for site_url in site_urls:
+        try:
+            result = load_public_users(site_url)
+        except (RuntimeError, ValueError) as exc:
+            failures.append({"site": site_url, "error": str(exc)})
+            continue
+        sites.append(result)
+        for user in result["users"]:
+            avatar_hash = user.get("avatar_hash")
+            if avatar_hash:
+                grouped[avatar_hash].append(
+                    {
+                        "site": result["site"],
+                        "name": user["name"],
+                        "slug": user["slug"],
+                        "link": user["link"],
+                    }
+                )
+
+    repeated = [
+        {"avatar_hash": fingerprint, "identities": identities}
+        for fingerprint, identities in sorted(grouped.items())
+        if len({item["site"] for item in identities}) > 1
+    ]
+    repeated.sort(key=lambda item: (-len(item["identities"]), item["avatar_hash"]))
+    return {
+        "observed_at": datetime.now(UTC).isoformat(),
+        "sites": sites,
+        "failures": failures,
+        "repeated_fingerprints": repeated,
+        "caveat": (
+            "A repeated public Gravatar hash supports reuse of one account email or avatar "
+            "identity across sites. It does not identify the real person, prove common legal "
+            "ownership, or authorize attempts to recover the underlying email address."
+        ),
+    }
+
+
+def public_post_search_counts(site_urls: list[str], terms: list[str], year: int) -> dict:
+    """Collect public WordPress post-search totals for a bounded site/term matrix."""
+    if not site_urls or len(site_urls) > MAX_SITES:
+        raise ValueError(f"site_urls must contain between 1 and {MAX_SITES} public sites")
+    cleaned_terms = [str(term).strip() for term in terms if str(term).strip()]
+    if not cleaned_terms or len(cleaned_terms) > MAX_TERMS:
+        raise ValueError(f"terms must contain between 1 and {MAX_TERMS} non-empty values")
+    if len(site_urls) * len(cleaned_terms) > MAX_REQUESTS:
+        raise ValueError(f"site and term matrix must not exceed {MAX_REQUESTS} requests")
+    if year < 2000 or year > datetime.now(UTC).year + 1:
+        raise ValueError("year is outside the supported public-research range")
+
+    after = f"{year:04d}-01-01T00:00:00Z"
+    before = f"{year + 1:04d}-01-01T00:00:00Z"
+    rows = []
+    for site_url in site_urls:
+        origin = _origin(site_url)
+        for term in cleaned_terms:
+            query = urlencode(
+                {
+                    "per_page": 1,
+                    "_fields": "id",
+                    "search": term,
+                    "after": after,
+                    "before": before,
+                }
+            )
+            endpoint = f"{origin}/wp-json/wp/v2/posts?{query}"
+            try:
+                headers, payload = _json_get(endpoint, max_bytes=250_000)
+                if not isinstance(payload, list):
+                    raise RuntimeError("WordPress posts endpoint returned an unexpected response")
+                total = int(headers.get("x-wp-total", len(payload)))
+                rows.append({"site": origin, "term": term, "year": year, "total": total})
+            except (RuntimeError, ValueError) as exc:
+                rows.append(
+                    {"site": origin, "term": term, "year": year, "total": None, "error": str(exc)}
+                )
+    return {
+        "observed_at": datetime.now(UTC).isoformat(),
+        "rows": rows,
+        "caveat": (
+            "WordPress search totals can overlap and can change as publishers add, delete, or "
+            "reindex material. They measure public indexed matches, not falsity, reach, or views."
+        ),
+    }
+
+
+def _write_or_print(payload: dict, output: Path | None) -> None:
+    rendered = json.dumps(payload, indent=2, ensure_ascii=False) + "\n"
+    if output is None:
+        print(rendered, end="")
+        return
+    output.parent.mkdir(parents=True, exist_ok=True)
+    output.write_text(rendered, encoding="utf-8")
+    print(f"wrote {output}")
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    sub = parser.add_subparsers(dest="command", required=True)
+    users = sub.add_parser("map-users", help="map repeated public WordPress avatar fingerprints")
+    users.add_argument("--site", action="append", required=True)
+    users.add_argument("--output", type=Path)
+    counts = sub.add_parser("post-counts", help="collect bounded public post-search totals")
+    counts.add_argument("--site", action="append", required=True)
+    counts.add_argument("--term", action="append", required=True)
+    counts.add_argument("--year", type=int, required=True)
+    counts.add_argument("--output", type=Path)
+    args = parser.parse_args()
+    if args.command == "map-users":
+        result = map_public_user_fingerprints(args.site)
+    else:
+        result = public_post_search_counts(args.site, args.term, args.year)
+    _write_or_print(result, args.output)
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

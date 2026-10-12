@@ -12,6 +12,8 @@ It combines:
 - FEC independent-expenditure filtering and aggregation; and
 - source-linked normalization of Schedule E rows from public FEC electronic filings;
 - read-only FCC public-file metadata search for known station/entity IDs; and
+- USAspending award retrieval and FPDS transaction-timeline normalization; and
+- public WordPress byline-fingerprint comparison and bounded post-search counts; and
 - an optional dedicated-WSL/WireGuard layout that keeps research traffic
   separate from ordinary browsers and Docker workloads.
 
@@ -96,9 +98,14 @@ Available MCP tools:
 - `fec_independent_expenditure_summary`
 - `fec_filing_schedule_e`
 - `fec_api_schedule_e`
+- `fec_treasurer_service_baseline`
 - `fcc_search_entity_files`
 - `fcc_file_details`
 - `fcc_public_file_download_url`
+- `usaspending_award_record`
+- `fpds_award_history`
+- `wordpress_public_identity_map`
+- `wordpress_public_post_counts`
 
 ## Data CLIs
 
@@ -158,6 +165,20 @@ environment; it is not accepted as an MCP argument, printed, or written to the
 output. Because OpenFEC is a processed nightly layer, reconcile time-sensitive
 work against primary filing CSV/HTML and FEC bulk exports.
 
+Build a service-provider baseline before treating close registration timing as
+evidence of common strategic control:
+
+```bash
+kekmaxxing-fec treasurer-baseline \
+  --treasurer "Example Treasurer" \
+  --cycle 2026 \
+  --output output/treasurer-baseline.json
+```
+
+The result lists committees and same-day first-Form-1 clusters. Those clusters
+are administrative comparison leads only; inspect the signed filings and do not
+equate shared treasurer/compliance services with legal affiliation or coordination.
+
 Schedule E amounts are reported candidate allocations. The tool does not label
 them as invoices, cash payments, or verified advertising delivery.
 
@@ -181,6 +202,48 @@ The FCC search endpoint may expose metadata even when its separate document CDN
 returns HTTP 403. Treat a title or file record as proof that metadata exists,
 not as proof of the document's unseen contents. The client does not enumerate
 stations or folders and does not try to bypass download controls.
+
+Reconstruct a public federal award and its FPDS transaction history:
+
+```bash
+kekmaxxing-procurement usaspending-award \
+  --award-id CONT_AWD_EXAMPLE_AGENCY_PARENT_AGENCY \
+  --output output/award.json
+kekmaxxing-procurement fpds-history \
+  --piid EXAMPLE123 \
+  --output output/fpds-history.json
+```
+
+The output deliberately distinguishes obligations from outlays, invoices, and
+delivered services. FPDS timestamp sequences can expose high-value document
+questions, but they are not proof of invalid authority without the signed award,
+modifications, and any ratification record.
+
+Map account fingerprints that WordPress sites expose publicly, without trying
+to reverse the underlying email address:
+
+```bash
+kekmaxxing-wordpress map-users \
+  --site https://example-one.invalid \
+  --site https://example-two.invalid \
+  --output output/public-user-map.json
+```
+
+Collect a bounded, reproducible matrix of public post-search totals:
+
+```bash
+kekmaxxing-wordpress post-counts \
+  --site https://example.invalid \
+  --term midterm \
+  --term election \
+  --year 2026 \
+  --output output/public-post-counts.json
+```
+
+A repeated Gravatar hash supports reuse of one account identity; it does not
+identify a person or prove common legal ownership. Search counts can overlap
+and measure indexed matches, not falsity, reach, or views. The client caps the
+number of sites and requests and only reads public REST endpoints.
 
 See [Methodology](docs/METHODOLOGY.md), [VPN isolation](docs/VPN-ISOLATION.md),
 and [privacy and release checks](docs/PRIVACY.md).

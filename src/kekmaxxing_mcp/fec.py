@@ -20,6 +20,24 @@ from .safety import public_get, validate_public_url
 FILE_NUMBER_RE = re.compile(r"^[1-9][0-9]{6,8}$")
 COMMITTEE_ID_RE = re.compile(r"^C[0-9]{8}$")
 OPENFEC_SCHEDULE_E_URL = "https://api.open.fec.gov/v1/schedules/schedule_e/"
+OPENFEC_COMMITTEES_URL = "https://api.open.fec.gov/v1/committees/"
+
+TREASURER_COMMITTEE_FIELDS = (
+    "committee_id",
+    "name",
+    "treasurer_name",
+    "committee_type",
+    "committee_type_full",
+    "designation",
+    "designation_full",
+    "filing_frequency",
+    "state",
+    "first_f1_date",
+    "last_f1_date",
+    "first_file_date",
+    "last_file_date",
+    "affiliated_committee_name",
+)
 
 
 def bulk_url(cycle: int) -> str:
@@ -148,12 +166,17 @@ def next_schedule_e_cursor(
 
 
 def _openfec_schedule_e_page(params: dict[str, object], api_key: str) -> dict:
-    validate_public_url(OPENFEC_SCHEDULE_E_URL)
+    return _openfec_page(OPENFEC_SCHEDULE_E_URL, params, api_key)
+
+
+def _openfec_page(url: str, params: dict[str, object], api_key: str) -> dict:
+    """Fetch one fixed-endpoint OpenFEC page without exposing the credential."""
+    validate_public_url(url)
     safe_params = dict(params)
     safe_params["api_key"] = api_key
     try:
         response = httpx.get(
-            OPENFEC_SCHEDULE_E_URL,
+            url,
             params=safe_params,
             headers={"User-Agent": "Kekmaxxing-MCP/0.1 (+public-source-research)"},
             follow_redirects=False,
@@ -170,6 +193,112 @@ def _openfec_schedule_e_page(params: dict[str, object], api_key: str) -> dict:
     if not isinstance(payload, dict):
         raise RuntimeError("OpenFEC returned an unexpected response")
     return payload
+
+
+def summarize_treasurer_service(rows: list[dict], cycle: int) -> dict:
+    """Normalize committees and identify same-day first-Form-1 clusters.
+
+    A cluster is an administrative baseline lead. It does not establish common
+    strategic control, legal affiliation, or coordination.
+    """
+    normalized = [
+        {field: row.get(field) for field in TREASURER_COMMITTEE_FIELDS} for row in rows
+    ]
+    normalized.sort(
+        key=lambda row: (str(row.get("first_f1_date") or ""), str(row["committee_id"]))
+    )
+    by_date: dict[str, list[dict[str, str | None]]] = defaultdict(list)
+    for row in normalized:
+        first_f1 = str(row.get("first_f1_date") or "")
+        if not first_f1.startswith(str(cycle)):
+            continue
+        date = first_f1[:10]
+        by_date[date].append(
+            {
+                "committee_id": row.get("committee_id"),
+                "name": row.get("name"),
+                "first_f1_date": row.get("first_f1_date"),
+            }
+        )
+    clusters = [
+        {"date": date, "committee_count": len(members), "committees": members}
+        for date, members in sorted(by_date.items())
+        if len(members) > 1
+    ]
+    return {
+        "committee_count": len(normalized),
+        "new_in_cycle_count": sum(
+            1
+            for row in normalized
+            if str(row.get("first_f1_date") or "").startswith(str(cycle))
+        ),
+        "same_day_first_f1_clusters": clusters,
+        "committees": normalized,
+        "caveat": (
+            "Same-day registration within a treasurer/compliance portfolio is evidence of "
+            "administrative onboarding, not proof of common strategic control, legal "
+            "affiliation, or prohibited coordination. Inspect the signed Form 1 source "
+            "documents before drawing a stronger conclusion."
+        ),
+    }
+
+
+def load_openfec_treasurer_committees(
+    treasurer_name: str,
+    cycle: int,
+    *,
+    max_pages: int = 20,
+    api_key: str | None = None,
+) -> dict:
+    """Load committees matching a public treasurer name and build a service baseline."""
+    treasurer = treasurer_name.strip()
+    if len(treasurer) < 2 or len(treasurer) > 120 or any(ord(char) < 32 for char in treasurer):
+        raise ValueError("Treasurer name must contain 2 to 120 printable characters")
+    current = datetime.now(UTC).year
+    if cycle % 2 or cycle < 2000 or cycle > current + 2:
+        raise ValueError("Cycle must be an even election year between 2000 and the next cycle")
+    if max_pages < 1 or max_pages > 100:
+        raise ValueError("max_pages must be between 1 and 100")
+    secret = api_key or os.environ.get("FEC_API_KEY", "")
+    if not secret:
+        raise RuntimeError("Set FEC_API_KEY in the process environment")
+
+    results: list[dict] = []
+    reported_count: int | None = None
+    pages = 0
+    for page in range(1, max_pages + 1):
+        payload = _openfec_page(
+            OPENFEC_COMMITTEES_URL,
+            {
+                "treasurer_name": treasurer,
+                "cycle": cycle,
+                "per_page": 100,
+                "page": page,
+            },
+            secret,
+        )
+        page_results = payload.get("results") or []
+        if not isinstance(page_results, list):
+            raise RuntimeError("OpenFEC results field was not a list")
+        pagination = payload.get("pagination") or {}
+        if reported_count is None and pagination.get("count") is not None:
+            reported_count = int(pagination["count"])
+        pages += 1
+        results.extend(page_results)
+        if not page_results or (reported_count is not None and len(results) >= reported_count):
+            break
+    else:
+        raise RuntimeError("OpenFEC committee pagination reached max_pages before completion")
+
+    baseline = summarize_treasurer_service(results, cycle)
+    return {
+        "treasurer_name": treasurer,
+        "cycle": cycle,
+        "source_endpoint": OPENFEC_COMMITTEES_URL,
+        "pages_fetched": pages,
+        "reported_count": reported_count,
+        **baseline,
+    }
 
 
 def load_openfec_schedule_e(
@@ -328,7 +457,26 @@ def main() -> int:
     api_schedule_e.add_argument("--cycle", required=True, type=int)
     api_schedule_e.add_argument("--output", required=True, type=Path)
     api_schedule_e.add_argument("--max-pages", type=int, default=100)
+    treasurer_baseline = sub.add_parser(
+        "treasurer-baseline",
+        help="build a same-day registration baseline for a public FEC treasurer",
+    )
+    treasurer_baseline.add_argument("--treasurer", required=True)
+    treasurer_baseline.add_argument("--cycle", required=True, type=int)
+    treasurer_baseline.add_argument("--output", required=True, type=Path)
+    treasurer_baseline.add_argument("--max-pages", type=int, default=20)
     args = parser.parse_args()
+    if args.command == "treasurer-baseline":
+        payload = load_openfec_treasurer_committees(
+            args.treasurer, args.cycle, max_pages=args.max_pages
+        )
+        args.output.parent.mkdir(parents=True, exist_ok=True)
+        args.output.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+        print(
+            f"wrote {payload['committee_count']:,} committees and "
+            f"{len(payload['same_day_first_f1_clusters']):,} same-day clusters"
+        )
+        return 0
     if args.command == "api-schedule-e":
         payload = load_openfec_schedule_e(
             args.committee_id, args.cycle, max_pages=args.max_pages

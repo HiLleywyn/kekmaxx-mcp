@@ -7,6 +7,7 @@ from kekmaxxing_mcp.fec import (
     next_schedule_e_cursor,
     normalize_schedule_e,
     summarize_rows,
+    summarize_treasurer_service,
 )
 
 
@@ -120,3 +121,32 @@ def test_schedule_e_cursor_uses_keyset_not_page_number() -> None:
 
 def test_schedule_e_cursor_stops_without_complete_last_indexes() -> None:
     assert next_schedule_e_cursor({"last_indexes": {"last_index": "123"}}) is None
+
+
+def test_treasurer_service_baseline_finds_same_day_clusters_without_overclaiming() -> None:
+    rows = [
+        {
+            "committee_id": "C00000001",
+            "name": "Example One",
+            "treasurer_name": "Example Treasurer",
+            "first_f1_date": "2026-03-12T14:06:00",
+        },
+        {
+            "committee_id": "C00000002",
+            "name": "Example Two",
+            "treasurer_name": "Example Treasurer",
+            "first_f1_date": "2026-03-12T14:39:00",
+        },
+        {
+            "committee_id": "C00000003",
+            "name": "Older Committee",
+            "treasurer_name": "Example Treasurer",
+            "first_f1_date": "2024-01-10T12:00:00",
+        },
+    ]
+    result = summarize_treasurer_service(rows, 2026)
+    assert result["committee_count"] == 3
+    assert result["new_in_cycle_count"] == 2
+    assert result["same_day_first_f1_clusters"][0]["date"] == "2026-03-12"
+    assert result["same_day_first_f1_clusters"][0]["committee_count"] == 2
+    assert "not proof" in result["caveat"]

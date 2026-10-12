@@ -8,12 +8,15 @@ from .browser import browse
 from .fcc import build_download_url, get_file_details, search_entity_files
 from .fec import (
     load_openfec_schedule_e,
+    load_openfec_treasurer_committees,
     load_rows,
     load_schedule_e_filings,
     summarize_rows,
 )
 from .google_ads import find_advertisers
 from .passive import compare_pages, page_fingerprint, resolve_records, tls_certificate
+from .procurement import load_fpds_award_history, load_usaspending_award
+from .wordpress import map_public_user_fingerprints, public_post_search_counts
 
 mcp = FastMCP(
     "kekmaxxing",
@@ -88,6 +91,20 @@ def fec_api_schedule_e(committee_id: str, cycle: int, max_pages: int = 100) -> d
 
 
 @mcp.tool()
+def fec_treasurer_service_baseline(
+    treasurer_name: str, cycle: int, max_pages: int = 20
+) -> dict:
+    """Compare committee-registration timing across one public FEC treasurer's portfolio.
+
+    Requires FEC_API_KEY in the MCP server process environment. Same-day clusters
+    are administrative comparison leads, not findings of common strategic control.
+    """
+    return load_openfec_treasurer_committees(
+        treasurer_name, cycle, max_pages=min(max(int(max_pages), 1), 100)
+    )
+
+
+@mcp.tool()
 def fcc_search_entity_files(entity_id: str, search_key: str) -> dict:
     """Search FCC public-file metadata for a known station/entity ID and term."""
     return search_entity_files(entity_id, search_key)
@@ -103,6 +120,30 @@ def fcc_file_details(entity_id: str, file_id: str) -> dict:
 def fcc_public_file_download_url(folder_id: str, file_manager_id: str) -> str:
     """Build an FCC public PDF URL from identifiers returned by file metadata."""
     return build_download_url(folder_id, file_manager_id)
+
+
+@mcp.tool()
+def usaspending_award_record(generated_award_id: str) -> dict:
+    """Retrieve one official USAspending award without inferring payment or delivery."""
+    return load_usaspending_award(generated_award_id)
+
+
+@mcp.tool()
+def fpds_award_history(piid: str, max_entries: int = 50) -> dict:
+    """Normalize public FPDS ATOM transaction history for one known PIID."""
+    return load_fpds_award_history(piid, max_entries=min(max(int(max_entries), 1), 200))
+
+
+@mcp.tool()
+def wordpress_public_identity_map(site_urls: list[str]) -> dict:
+    """Group repeated public WordPress/Gravatar fingerprints without resolving emails."""
+    return map_public_user_fingerprints(site_urls)
+
+
+@mcp.tool()
+def wordpress_public_post_counts(site_urls: list[str], terms: list[str], year: int) -> dict:
+    """Collect bounded public WordPress search totals; counts do not measure truth or reach."""
+    return public_post_search_counts(site_urls, terms, year)
 
 
 def main() -> None:
