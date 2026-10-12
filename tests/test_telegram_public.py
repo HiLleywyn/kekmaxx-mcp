@@ -55,3 +55,21 @@ def test_probe_is_bounded() -> None:
         telegram_public.probe_public_telegram_history(
             "example_channel", [100], [f"term-{index}" for index in range(21)]
         )
+
+
+def test_cli_prints_unicode_on_windows_console(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    monkeypatch.setattr(
+        telegram_public,
+        "probe_public_telegram_history",
+        lambda *_: {"text": "public message 💬"},
+    )
+    monkeypatch.setattr(
+        telegram_public.sys,
+        "argv",
+        ["kekmaxxing-telegram-history", "--channel", "example", "--cursor", "10"],
+    )
+
+    assert telegram_public.main() == 0
+    assert "public message 💬" in capsys.readouterr().out

@@ -6,6 +6,7 @@ import argparse
 import hashlib
 import json
 import re
+import sys
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -153,6 +154,10 @@ def main() -> int:
         args.output.parent.mkdir(parents=True, exist_ok=True)
         args.output.write_text(rendered + "\n", encoding="utf-8")
     else:
+        try:
+            sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        except (AttributeError, OSError):
+            pass
         print(rendered)
     return 0
 
