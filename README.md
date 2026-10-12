@@ -10,6 +10,7 @@ It combines:
 - passive DNS, HTTP-header, TLS-certificate, and HTML-fingerprint comparison;
 - Google Political Advertising Transparency archive search and extraction;
 - FEC independent-expenditure filtering and aggregation; and
+- source-linked normalization of Schedule E rows from public FEC electronic filings; and
 - an optional dedicated-WSL/WireGuard layout that keeps research traffic
   separate from ordinary browsers and Docker workloads.
 
@@ -92,6 +93,7 @@ Available MCP tools:
 - `compare_public_pages`
 - `google_ads_find_advertisers`
 - `fec_independent_expenditure_summary`
+- `fec_filing_schedule_e`
 
 ## Data CLIs
 
@@ -124,6 +126,18 @@ Produce a compact candidate/state/vendor summary:
 ```bash
 kekmaxxing-fec summary --cycle 2026 --committee-id C00000000
 ```
+
+Normalize Schedule E rows from one or more public electronic filings while
+retaining each filing number, transaction ID, signer, and source URL:
+
+```bash
+kekmaxxing-fec filing-schedule-e \
+  --file-number 1234567 \
+  --output output/fec-schedule-e.csv
+```
+
+Schedule E amounts are reported candidate allocations. The tool does not label
+them as invoices, cash payments, or verified advertising delivery.
 
 See [Methodology](docs/METHODOLOGY.md), [VPN isolation](docs/VPN-ISOLATION.md),
 and [privacy and release checks](docs/PRIVACY.md).

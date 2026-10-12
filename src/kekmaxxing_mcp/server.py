@@ -5,7 +5,7 @@ from __future__ import annotations
 from mcp.server.fastmcp import FastMCP
 
 from .browser import browse
-from .fec import load_rows, summarize_rows
+from .fec import load_rows, load_schedule_e_filings, summarize_rows
 from .google_ads import find_advertisers
 from .passive import compare_pages, page_fingerprint, resolve_records, tls_certificate
 
@@ -63,6 +63,12 @@ def fec_independent_expenditure_summary(
     """Aggregate current FEC independent-expenditure bulk rows for named committee IDs."""
     rows = load_rows(cycle, set(committee_ids))
     return summarize_rows(rows, min(max(int(top), 1), 100))
+
+
+@mcp.tool()
+def fec_filing_schedule_e(file_numbers: list[str]) -> list[dict[str, str]]:
+    """Normalize Schedule E rows from public FEC electronic filing numbers."""
+    return load_schedule_e_filings(file_numbers)
 
 
 def main() -> None:
