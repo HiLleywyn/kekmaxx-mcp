@@ -90,6 +90,7 @@ def test_timeline_measures_continuity_and_public_link_overlap(tmp_path) -> None:
             "propagation_seconds": -259200,
         }
     ]
+    assert result["source_syndication_groups"] == []
     assert result["outbound_telegram_links"] == [
         {
             "source": "alpha",
@@ -108,3 +109,60 @@ def test_timeline_measures_continuity_and_public_link_overlap(tmp_path) -> None:
     assert result["synchronized_exact_urls"][0]["url"] == synchronized
     assert result["synchronized_exact_urls"][0]["channel_count"] == 2
     assert len(result["cross_channel_exact_text"]) == 1
+
+
+def test_timeline_groups_one_source_relayed_by_multiple_carriers(tmp_path) -> None:
+    source = tmp_path / "source.csv"
+    carrier_a = tmp_path / "carrier-a.csv"
+    carrier_b = tmp_path / "carrier-b.csv"
+    _write_posts(
+        source,
+        [
+            {
+                "channel": "source",
+                "datetime_utc": "2026-10-08T12:00:00+00:00",
+                "post_url": "https://t.me/source/10",
+                "text": "S" * 90,
+                "outbound_urls": "[]",
+            }
+        ],
+    )
+    _write_posts(
+        carrier_a,
+        [
+            {
+                "channel": "carrier_a",
+                "datetime_utc": "2026-10-08T12:01:00+00:00",
+                "post_url": "https://t.me/carrier_a/20",
+                "text": "A" * 90,
+                "outbound_urls": json.dumps(["https://t.me/source/10"]),
+            }
+        ],
+    )
+    _write_posts(
+        carrier_b,
+        [
+            {
+                "channel": "carrier_b",
+                "datetime_utc": "2026-10-08T12:01:19+00:00",
+                "post_url": "https://t.me/carrier_b/30",
+                "text": "B" * 90,
+                "outbound_urls": json.dumps(["https://t.me/source/10"]),
+            }
+        ],
+    )
+
+    result = analyze_public_post_timelines(
+        [source, carrier_a, carrier_b],
+        baseline_start="2026-10-06",
+        event_start="2026-10-08",
+        event_end="2026-10-09",
+    )
+
+    group = result["source_syndication_groups"][0]
+    assert group["source_post_url"] == "https://t.me/source/10"
+    assert group["carrier_count"] == 2
+    assert group["occurrence_count"] == 2
+    assert group["carrier_spread_seconds"] == 19
+    assert group["source_to_first_carrier_seconds"] == 60
+    assert group["source_to_last_carrier_seconds"] == 79

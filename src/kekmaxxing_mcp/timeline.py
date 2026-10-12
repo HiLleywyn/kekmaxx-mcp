@@ -267,6 +267,64 @@ def analyze_public_post_timelines(
         duplicate_text.append({"sha256": digest, "occurrences": occurrences})
     duplicate_text.sort(key=lambda item: (-len(item["occurrences"]), str(item["sha256"])))
 
+    syndication_by_source: defaultdict[tuple[str, str, str], list[dict[str, object]]] = (
+        defaultdict(list)
+    )
+    for occurrence in resolved_direct_links:
+        if int(occurrence["propagation_seconds"]) < 0:
+            continue
+        key = (
+            str(occurrence["source_channel"]),
+            str(occurrence["source_post_url"]),
+            str(occurrence["source_datetime_utc"]),
+        )
+        syndication_by_source[key].append(occurrence)
+
+    source_syndication_groups = []
+    for (source_channel, source_post_url, source_datetime), occurrences in (
+        syndication_by_source.items()
+    ):
+        carriers = {str(item["carrier_channel"]) for item in occurrences}
+        if len(carriers) < 2:
+            continue
+        ordered = sorted(
+            occurrences,
+            key=lambda item: (
+                str(item["carrier_datetime_utc"]),
+                str(item["carrier_channel"]),
+                str(item["carrier_post_url"]),
+            ),
+        )
+        carrier_stamps = [
+            _parse_timestamp(str(item["carrier_datetime_utc"])) for item in ordered
+        ]
+        source_syndication_groups.append(
+            {
+                "source_channel": source_channel,
+                "source_post_url": source_post_url,
+                "source_datetime_utc": source_datetime,
+                "carrier_count": len(carriers),
+                "occurrence_count": len(ordered),
+                "carrier_spread_seconds": int(
+                    (max(carrier_stamps) - min(carrier_stamps)).total_seconds()
+                ),
+                "source_to_first_carrier_seconds": min(
+                    int(item["propagation_seconds"]) for item in ordered
+                ),
+                "source_to_last_carrier_seconds": max(
+                    int(item["propagation_seconds"]) for item in ordered
+                ),
+                "occurrences": ordered,
+            }
+        )
+    source_syndication_groups.sort(
+        key=lambda item: (
+            -int(item["carrier_count"]),
+            int(item["carrier_spread_seconds"]),
+            str(item["source_post_url"]),
+        )
+    )
+
     return {
         "generated_at_utc": datetime.now(UTC).isoformat(),
         "source_files": sorted(source_files),
@@ -291,6 +349,7 @@ def analyze_public_post_timelines(
                 str(item["carrier_post_url"]),
             ),
         ),
+        "source_syndication_groups": source_syndication_groups,
         "outbound_telegram_links": [
             {
                 "source": source,
@@ -310,6 +369,8 @@ def analyze_public_post_timelines(
             "Posting continuity does not establish whether an account is human or automated.",
             "Temporal correlation with an outage does not establish infrastructure dependence.",
             "Shared public links can reflect common sourcing rather than common control.",
+            "Near-simultaneous relays establish synchronized distribution, not whether the "
+            "mechanism was manual, automated, or centrally controlled.",
             "Missing public-preview posts can reflect deletion, moderation, or collection gaps.",
         ],
     }

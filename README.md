@@ -293,6 +293,10 @@ When a Telegram link points to a post present in another loaded CSV, the output
 also records the exact source and carrier post URLs, timestamps, and propagation
 delay. Negative delays are retained as a useful warning that the link is not a
 simple forward sequence or that source timestamps require review.
+The output also groups one resolved source post relayed by multiple loaded
+channels, including source-to-carrier delays and the spread between carrier
+timestamps. This measures synchronized syndication; it does not determine
+whether the workflow was manual, automated, or centrally controlled.
 
 Resolve one already-known public X status into a bounded JSON snapshot:
 
