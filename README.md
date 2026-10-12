@@ -15,7 +15,9 @@ It combines:
 - USAspending award retrieval and FPDS transaction-timeline normalization; and
 - public WordPress byline-fingerprint comparison and bounded post-search counts; and
 - local public-post timeline comparison for outage and event-correlation tests; and
-- single-post public X resolution through FxTwitter with evidence hashes and explicit caveats; and
+- single-post public X resolution through FxTwitter with evidence hashes and explicit caveats;
+- bounded validation of already-known public Telegram citations, including
+  missing-post detection, observed message-ID ranges, and lexical review aids; and
 - an optional dedicated-WSL/WireGuard layout that keeps research traffic
   separate from ordinary browsers and Docker workloads.
 
@@ -112,8 +114,25 @@ Available MCP tools:
 - `wordpress_public_post_counts`
 - `public_post_event_timeline`
 - `public_x_status`
+- `public_telegram_citation_audit`
 
 ## Data CLIs
+
+Validate explicit public Telegram citations without enumerating channels or
+message IDs:
+
+```bash
+kekmaxxing-citation-audit \
+  https://t.me/example_channel/12345 \
+  --term "example claim" \
+  --output output/citation-audit.json
+```
+
+The result distinguishes a specific rendered post from a generic channel card,
+records a hash of the response, and compares the cited ID with IDs visible in
+the channel's public preview. A missing post or large ID gap is a diagnostic
+lead, not proof that a citation was fabricated. Keyword matches are not semantic
+fact-checks and require manual review.
 
 Search Google's official advertiser index:
 

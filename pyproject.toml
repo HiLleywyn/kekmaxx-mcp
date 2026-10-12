@@ -43,6 +43,7 @@ kekmaxxing-procurement = "kekmaxxing_mcp.procurement:main"
 kekmaxxing-wordpress = "kekmaxxing_mcp.wordpress:main"
 kekmaxxing-timeline = "kekmaxxing_mcp.timeline:main"
 kekmaxxing-x = "kekmaxxing_mcp.x_public:main"
+kekmaxxing-citation-audit = "kekmaxxing_mcp.citation_audit:main"
 kekmaxxing-install-browser = "kekmaxxing_mcp.install_browser:main"
 
 [tool.hatch.build.targets.wheel]

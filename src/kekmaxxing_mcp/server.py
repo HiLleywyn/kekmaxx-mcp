@@ -5,6 +5,7 @@ from __future__ import annotations
 from mcp.server.fastmcp import FastMCP
 
 from .browser import browse
+from .citation_audit import audit_public_telegram_citations
 from .fcc import build_download_url, get_file_details, search_entity_files
 from .fec import (
     load_openfec_schedule_e,
@@ -190,6 +191,18 @@ def public_x_status(status: str) -> dict:
     a third-party service; the result is not proof of account administration.
     """
     return resolve_public_x_status(status)
+
+
+@mcp.tool()
+def public_telegram_citation_audit(
+    urls: list[str], expected_terms: list[str] | None = None
+) -> dict:
+    """Validate known public Telegram post citations without enumerating messages.
+
+    Resolution and message-ID range checks are diagnostic only. Optional keyword
+    matches are lexical aids and do not establish that a source supports a claim.
+    """
+    return audit_public_telegram_citations(urls, expected_terms)
 
 
 def main() -> None:
