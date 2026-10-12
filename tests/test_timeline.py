@@ -79,6 +79,17 @@ def test_timeline_measures_continuity_and_public_link_overlap(tmp_path) -> None:
     assert result["direct_channel_links"] == [
         {"source": "alpha", "target": "beta", "occurrences": 1}
     ]
+    assert result["resolved_direct_channel_link_occurrences"] == [
+        {
+            "source_channel": "beta",
+            "source_post_url": "https://t.me/beta/2",
+            "source_datetime_utc": "2026-10-09T12:00:00+00:00",
+            "carrier_channel": "alpha",
+            "carrier_post_url": "https://t.me/alpha/1",
+            "carrier_datetime_utc": "2026-10-06T12:00:00+00:00",
+            "propagation_seconds": -259200,
+        }
+    ]
     assert result["outbound_telegram_links"] == [
         {
             "source": "alpha",

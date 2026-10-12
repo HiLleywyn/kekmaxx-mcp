@@ -289,6 +289,10 @@ both inside the loaded set and to outside Telegram channels so associates can
 be triaged without treating a citation as proof of common control. Posting
 continuity can disprove a claimed outage dependency, but silence alone cannot
 prove hosting, automation, nationality, or common control.
+When a Telegram link points to a post present in another loaded CSV, the output
+also records the exact source and carrier post URLs, timestamps, and propagation
+delay. Negative delays are retained as a useful warning that the link is not a
+simple forward sequence or that source timestamps require review.
 
 Resolve one already-known public X status into a bounded JSON snapshot:
 

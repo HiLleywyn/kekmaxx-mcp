@@ -114,11 +114,17 @@ def analyze_public_post_timelines(
 
     channels = sorted({str(row["channel"]) for row in rows}, key=str.lower)
     channel_keys = {channel.lower(): channel for channel in channels}
+    loaded_posts = {
+        canonical: row
+        for row in rows
+        if (canonical := _canonical_url(str(row["post_url"]))) is not None
+    }
     daily: dict[str, Counter[str]] = {channel: Counter() for channel in channels}
     external_domains: dict[str, Counter[str]] = {channel: Counter() for channel in channels}
     exact_urls: dict[str, Counter[str]] = {channel: Counter() for channel in channels}
     url_occurrences: defaultdict[str, list[dict[str, str]]] = defaultdict(list)
     direct_links: Counter[tuple[str, str]] = Counter()
+    resolved_direct_links: list[dict[str, object]] = []
     telegram_links: Counter[tuple[str, str]] = Counter()
     text_occurrences: defaultdict[str, list[dict[str, str]]] = defaultdict(list)
 
@@ -153,6 +159,21 @@ def analyze_public_post_timelines(
                 telegram_links[(channel, linked_channel)] += 1
                 if linked_channel in channel_keys:
                     direct_links[(channel, channel_keys[linked_channel])] += 1
+                    linked_post = loaded_posts.get(canonical)
+                    if linked_post is not None:
+                        linked_stamp = linked_post["stamp"]
+                        assert isinstance(linked_stamp, datetime)
+                        resolved_direct_links.append(
+                            {
+                                "source_channel": channel_keys[linked_channel],
+                                "source_post_url": canonical,
+                                "source_datetime_utc": linked_stamp.isoformat(),
+                                "carrier_channel": channel,
+                                "carrier_post_url": str(row["post_url"]),
+                                "carrier_datetime_utc": stamp.isoformat(),
+                                "propagation_seconds": int((stamp - linked_stamp).total_seconds()),
+                            }
+                        )
             if hostname in IGNORED_LINK_HOSTS or hostname.endswith(".telesco.pe"):
                 continue
             external_domains[channel][hostname] += 1
@@ -262,6 +283,14 @@ def analyze_public_post_timelines(
                 direct_links.items(), key=lambda item: (-item[1], item[0])
             )
         ],
+        "resolved_direct_channel_link_occurrences": sorted(
+            resolved_direct_links,
+            key=lambda item: (
+                int(item["propagation_seconds"]),
+                str(item["source_post_url"]),
+                str(item["carrier_post_url"]),
+            ),
+        ),
         "outbound_telegram_links": [
             {
                 "source": source,
