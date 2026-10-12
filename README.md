@@ -14,6 +14,7 @@ It combines:
 - read-only FCC public-file metadata search for known station/entity IDs; and
 - USAspending award retrieval and FPDS transaction-timeline normalization; and
 - public WordPress byline-fingerprint comparison and bounded post-search counts; and
+- local public-post timeline comparison for outage and event-correlation tests; and
 - an optional dedicated-WSL/WireGuard layout that keeps research traffic
   separate from ordinary browsers and Docker workloads.
 
@@ -108,6 +109,7 @@ Available MCP tools:
 - `public_site_identity_map`
 - `public_checkout_identity_map`
 - `wordpress_public_post_counts`
+- `public_post_event_timeline`
 
 ## Data CLIs
 
@@ -266,6 +268,25 @@ A repeated Gravatar hash supports reuse of one account identity; it does not
 identify a person or prove common legal ownership. Search counts can overlap
 and measure indexed matches, not falsity, reach, or views. The client caps the
 number of sites and requests and only reads public REST endpoints.
+
+Test whether public channels actually changed behavior around an outage or
+other external event, while also finding public cross-links and exact URL reuse:
+
+```bash
+kekmaxxing-timeline \
+  --csv evidence/channel-one-public-posts.csv \
+  --csv evidence/channel-two-public-posts.csv \
+  --baseline-start 2026-10-01 \
+  --event-start 2026-10-08 \
+  --event-end 2026-10-11 \
+  --output output/event-timeline.json
+```
+
+The timeline tool does not label accounts as bots. It inventories public links
+both inside the loaded set and to outside Telegram channels so associates can
+be triaged without treating a citation as proof of common control. Posting
+continuity can disprove a claimed outage dependency, but silence alone cannot
+prove hosting, automation, nationality, or common control.
 
 See [Methodology](docs/METHODOLOGY.md), [VPN isolation](docs/VPN-ISOLATION.md),
 and [privacy and release checks](docs/PRIVACY.md).

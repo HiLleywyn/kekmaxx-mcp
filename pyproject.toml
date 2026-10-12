@@ -41,6 +41,7 @@ kekmaxxing-fec = "kekmaxxing_mcp.fec:main"
 kekmaxxing-fcc = "kekmaxxing_mcp.fcc:main"
 kekmaxxing-procurement = "kekmaxxing_mcp.procurement:main"
 kekmaxxing-wordpress = "kekmaxxing_mcp.wordpress:main"
+kekmaxxing-timeline = "kekmaxxing_mcp.timeline:main"
 kekmaxxing-install-browser = "kekmaxxing_mcp.install_browser:main"
 
 [tool.hatch.build.targets.wheel]

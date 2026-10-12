@@ -16,6 +16,7 @@ from .fec import (
 from .google_ads import find_advertisers
 from .passive import compare_pages, page_fingerprint, resolve_records, tls_certificate
 from .procurement import load_fpds_award_history, load_usaspending_award
+from .timeline import analyze_public_post_timelines as analyze_timelines
 from .wordpress import (
     map_public_checkout_identities,
     map_public_site_identities,
@@ -161,6 +162,23 @@ def public_checkout_identity_map(site_urls: list[str]) -> dict:
 def wordpress_public_post_counts(site_urls: list[str], terms: list[str], year: int) -> dict:
     """Collect bounded public WordPress search totals; counts do not measure truth or reach."""
     return public_post_search_counts(site_urls, terms, year)
+
+
+@mcp.tool()
+def public_post_event_timeline(
+    csv_files: list[str], baseline_start: str, event_start: str, event_end: str
+) -> dict:
+    """Compare local public-post exports around an event and map public link reuse.
+
+    This measures observable activity, exact public URLs, and Telegram links. It
+    does not identify bots, infer account ownership, or establish causation.
+    """
+    return analyze_timelines(
+        csv_files,
+        baseline_start=baseline_start,
+        event_start=event_start,
+        event_end=event_end,
+    )
 
 
 def main() -> None:
