@@ -106,6 +106,7 @@ Available MCP tools:
 - `fpds_award_history`
 - `wordpress_public_identity_map`
 - `public_site_identity_map`
+- `public_checkout_identity_map`
 - `wordpress_public_post_counts`
 
 ## Data CLIs
@@ -238,6 +239,16 @@ kekmaxxing-wordpress map-sites \
   --site https://example-one.invalid \
   --site https://example-two.invalid \
   --output output/public-site-map.json
+```
+
+Compare client-side payment-gateway assets exposed on public checkout pages,
+without adding items or submitting checkout data:
+
+```bash
+kekmaxxing-wordpress map-checkouts \
+  --site https://example-one.invalid \
+  --site https://example-two.invalid \
+  --output output/public-checkout-map.json
 ```
 
 Collect a bounded, reproducible matrix of public post-search totals:

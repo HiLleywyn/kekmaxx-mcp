@@ -17,6 +17,7 @@ from .google_ads import find_advertisers
 from .passive import compare_pages, page_fingerprint, resolve_records, tls_certificate
 from .procurement import load_fpds_award_history, load_usaspending_award
 from .wordpress import (
+    map_public_checkout_identities,
     map_public_site_identities,
     map_public_user_fingerprints,
     public_post_search_counts,
@@ -148,6 +149,12 @@ def wordpress_public_identity_map(site_urls: list[str]) -> dict:
 def public_site_identity_map(site_urls: list[str]) -> dict:
     """Cluster public sites by exact analytics, WordPress, and cross-link fingerprints."""
     return map_public_site_identities(site_urls)
+
+
+@mcp.tool()
+def public_checkout_identity_map(site_urls: list[str]) -> dict:
+    """Compare public checkout assets without adding items or submitting transactions."""
+    return map_public_checkout_identities(site_urls)
 
 
 @mcp.tool()

@@ -198,3 +198,46 @@ def test_map_public_site_identities_preserves_network_failure(monkeypatch) -> No
     )
     assert [site["site"] for site in result["sites"]] == ["https://live.example"]
     assert result["failures"] == [{"site": "https://slow.example", "error": "timed out"}]
+
+
+def test_map_public_checkout_identities_reads_gateway_markers(monkeypatch) -> None:
+    def fake_validate(url: str):
+        parsed = wordpress.urlparse(url)
+
+        class Target:
+            pass
+
+        target = Target()
+        target.url = url
+        target.hostname = parsed.hostname
+        target.port = 443
+        return target
+
+    monkeypatch.setattr(wordpress, "validate_public_url", fake_validate)
+
+    def fake_get(url: str, **_kwargs):
+        body = (
+            b'<link href="/wp-content/plugins/cardsshield-gateway-stripe/assets/styles.css">'
+            b'<script src="/wp-content/plugins/cardsshield-gateway-stripe/assets/js/'
+            b'checkout_hook.js?ver=2.6.6"></script>'
+            b'<div class="payment_method_eh_paypal_express"></div>'
+        )
+        return url, 200, {"content-type": "text/html"}, body
+
+    monkeypatch.setattr(wordpress, "public_get", fake_get)
+    result = wordpress.map_public_checkout_identities(
+        ["https://alpha.example", "https://beta.example"]
+    )
+    assert len(result["sites"]) == 2
+    assert all(site["payment_markers"]["cardsshield_gateway_stripe"] for site in result["sites"])
+    assert all(site["payment_markers"]["paypal_express"] for site in result["sites"])
+    assert all(
+        site["payment_markers"]["cardsshield_versions"] == ["2.6.6"]
+        for site in result["sites"]
+    )
+    assert result["repeated_checkout_plugins"] == [
+        {
+            "plugin": "cardsshield-gateway-stripe",
+            "sites": ["https://alpha.example", "https://beta.example"],
+        }
+    ]

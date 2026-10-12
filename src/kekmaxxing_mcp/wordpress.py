@@ -16,7 +16,7 @@ from bs4 import BeautifulSoup
 
 from .safety import public_get, validate_public_url
 
-MAX_SITES = 25
+MAX_SITES = 50
 MAX_TERMS = 25
 MAX_REQUESTS = 250
 AVATAR_HASH_RE = re.compile(r"/avatar/([0-9a-f]{32}|[0-9a-f]{64})(?:[?./]|$)", re.IGNORECASE)
@@ -25,6 +25,10 @@ GTM_RE = re.compile(r"\bGTM-[A-Z0-9]+\b", re.IGNORECASE)
 UA_RE = re.compile(r"\bUA-\d{4,}-\d+\b", re.IGNORECASE)
 WP_THEME_RE = re.compile(r"/wp-content/themes/([a-z0-9._-]+)", re.IGNORECASE)
 WP_PLUGIN_RE = re.compile(r"/wp-content/plugins/([a-z0-9._-]+)", re.IGNORECASE)
+CARDSHIELD_VERSION_RE = re.compile(
+    r"/wp-content/plugins/cardsshield-gateway-stripe/[^\"'\s?]+\?ver=([0-9.]+)",
+    re.IGNORECASE,
+)
 
 
 def _origin(url: str) -> str:
@@ -266,6 +270,66 @@ def map_public_site_identities(site_urls: list[str]) -> dict:
     }
 
 
+def load_public_checkout_identity(site_url: str) -> dict:
+    """Read public checkout assets without adding items or submitting a transaction."""
+    origin = _origin(site_url)
+    checkout_url = f"{origin}/checkout/"
+    final_url, status, headers, body = public_get(checkout_url, max_bytes=3_000_000)
+    text = body.decode("utf-8", errors="replace")
+    plugins = sorted({match.lower() for match in WP_PLUGIN_RE.findall(text)})
+    return {
+        "site": origin,
+        "checkout_url": checkout_url,
+        "final_url": final_url,
+        "status": status,
+        "content_type": headers.get("content-type", ""),
+        "html_sha256": hashlib.sha256(body).hexdigest(),
+        "plugins": plugins,
+        "payment_markers": {
+            "cardsshield_gateway_stripe": "cardsshield-gateway-stripe" in plugins,
+            "cardsshield_versions": sorted(set(CARDSHIELD_VERSION_RE.findall(text))),
+            "paypal_express": "eh_paypal_express" in text,
+        },
+    }
+
+
+def map_public_checkout_identities(site_urls: list[str]) -> dict:
+    """Compare public checkout plugin markers across a bounded list of sites."""
+    if not site_urls or len(site_urls) > MAX_SITES:
+        raise ValueError(f"site_urls must contain between 1 and {MAX_SITES} public sites")
+
+    sites = []
+    failures = []
+    plugins: defaultdict[str, set[str]] = defaultdict(set)
+    for site_url in site_urls:
+        try:
+            site = load_public_checkout_identity(site_url)
+        except (RuntimeError, ValueError, httpx.HTTPError) as exc:
+            failures.append({"site": site_url, "error": str(exc)})
+            continue
+        sites.append(site)
+        for plugin in site["plugins"]:
+            plugins[plugin].add(site["site"])
+
+    repeated_plugins = [
+        {"plugin": plugin, "sites": sorted(origins)}
+        for plugin, origins in plugins.items()
+        if len(origins) > 1
+    ]
+    repeated_plugins.sort(key=lambda item: (-len(item["sites"]), item["plugin"]))
+    return {
+        "observed_at": datetime.now(UTC).isoformat(),
+        "sites": sites,
+        "failures": failures,
+        "repeated_checkout_plugins": repeated_plugins,
+        "caveat": (
+            "Public checkout assets show installed client-side gateway components, not merchant "
+            "account ownership, configuration, transaction routing, settlement, or legality. "
+            "This helper performs GET requests only and never adds items or submits checkout data."
+        ),
+    }
+
+
 def public_post_search_counts(site_urls: list[str], terms: list[str], year: int) -> dict:
     """Collect public WordPress post-search totals for a bounded site/term matrix."""
     if not site_urls or len(site_urls) > MAX_SITES:
@@ -335,6 +399,11 @@ def main() -> int:
     )
     identities.add_argument("--site", action="append", required=True)
     identities.add_argument("--output", type=Path)
+    checkouts = sub.add_parser(
+        "map-checkouts", help="compare passive public checkout plugin markers"
+    )
+    checkouts.add_argument("--site", action="append", required=True)
+    checkouts.add_argument("--output", type=Path)
     counts = sub.add_parser("post-counts", help="collect bounded public post-search totals")
     counts.add_argument("--site", action="append", required=True)
     counts.add_argument("--term", action="append", required=True)
@@ -345,6 +414,8 @@ def main() -> int:
         result = map_public_user_fingerprints(args.site)
     elif args.command == "map-sites":
         result = map_public_site_identities(args.site)
+    elif args.command == "map-checkouts":
+        result = map_public_checkout_identities(args.site)
     else:
         result = public_post_search_counts(args.site, args.term, args.year)
     _write_or_print(result, args.output)
