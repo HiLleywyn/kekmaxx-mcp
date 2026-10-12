@@ -1,0 +1,8 @@
+[mcp_servers.kekmaxxing]
+command = "kekmaxxing-mcp"
+args = []
+startup_timeout_sec = 30
+
+[mcp_servers.kekmaxxing.env]
+UC_BROWSER_EXECUTABLE = "/path/to/dedicated/chrome"
+
