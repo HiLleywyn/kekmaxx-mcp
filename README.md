@@ -23,6 +23,11 @@ It combines:
 - bounded provenance inspection of public PDF artifacts, including document
   metadata, visible author cues, reference headings, dated citations, links,
   content hashes, and explicit interpretation limits; and
+- bounded public-site manifests that hash same-origin scripts and record forms,
+  assets, structured metadata, and public endpoint references without executing
+  code, submitting forms, or calling discovered endpoints; and
+- privacy-minimized RDAP snapshots that preserve registration dates,
+  nameservers, registrar, and status while omitting registrant contacts; and
 - an optional dedicated-WSL/WireGuard layout that keeps research traffic
   separate from ordinary browsers and Docker workloads.
 
@@ -122,6 +127,8 @@ Available MCP tools:
 - `public_telegram_citation_audit`
 - `public_telegram_history_probe`
 - `public_pdf_provenance`
+- `public_site_manifest`
+- `public_rdap_snapshot`
 
 ## Data CLIs
 
@@ -171,6 +178,31 @@ document-level author cues, reference headings, parenthetical publication years,
 and embedded/text links. Missing metadata or references is an investigative lead,
 not proof of deceptive or automated authorship, and the tool does not fact-check
 the document's substantive claims.
+
+Build a bounded manifest of a public site's HTML and same-origin scripts:
+
+```bash
+kekmaxxing-site-manifest \
+  https://example.org \
+  --output output/site-manifest.json
+```
+
+The manifest records hashes, metadata, form field names/types, structured-data
+labels, script assets, and literal public path/host references. It does not
+execute JavaScript, submit forms, fetch third-party scripts, or call application
+endpoints found in code. Shared infrastructure is a comparison lead, not proof
+of common ownership or data sharing.
+
+Preserve a privacy-minimized RDAP domain snapshot:
+
+```bash
+kekmaxxing-rdap example.org --output output/example-rdap.json
+```
+
+The result keeps domain dates, nameservers, statuses, DNSSEC state, and registrar
+identity while deliberately omitting registrant, administrative, technical,
+abuse, email, phone, and address fields. Close registration timing or shared
+providers do not by themselves establish common control.
 
 Search Google's official advertiser index:
 

@@ -18,6 +18,8 @@ from .google_ads import find_advertisers
 from .passive import compare_pages, page_fingerprint, resolve_records, tls_certificate
 from .pdf_public import inspect_public_pdf
 from .procurement import load_fpds_award_history, load_usaspending_award
+from .rdap_public import inspect_public_rdap
+from .site_manifest import inspect_public_site_manifest
 from .telegram_public import probe_public_telegram_history
 from .timeline import analyze_public_post_timelines as analyze_timelines
 from .wordpress import (
@@ -101,9 +103,7 @@ def fec_api_schedule_e(committee_id: str, cycle: int, max_pages: int = 100) -> d
 
 
 @mcp.tool()
-def fec_treasurer_service_baseline(
-    treasurer_name: str, cycle: int, max_pages: int = 20
-) -> dict:
+def fec_treasurer_service_baseline(treasurer_name: str, cycle: int, max_pages: int = 20) -> dict:
     """Compare committee-registration timing across one public FEC treasurer's portfolio.
 
     Requires FEC_API_KEY in the MCP server process environment. Same-day clusters
@@ -228,6 +228,32 @@ def public_pdf_provenance(url: str, max_bytes: int = 20_000_000, max_pages: int 
     automated authorship, or false content.
     """
     return inspect_public_pdf(url, max_bytes=max_bytes, max_pages=max_pages)
+
+
+@mcp.tool()
+def public_site_manifest(
+    url: str,
+    max_bytes: int = 2_000_000,
+    max_same_origin_scripts: int = 12,
+    max_script_bytes: int = 1_000_000,
+) -> dict:
+    """Record public page, form, asset, and script manifests without executing code.
+
+    Same-origin scripts are hashed and inspected for public path/host references.
+    Discovered application endpoints are never called.
+    """
+    return inspect_public_site_manifest(
+        url,
+        max_bytes=max_bytes,
+        max_same_origin_scripts=max_same_origin_scripts,
+        max_script_bytes=max_script_bytes,
+    )
+
+
+@mcp.tool()
+def public_rdap_snapshot(domain: str) -> dict:
+    """Preserve domain dates, nameservers, status, and registrar without registrant contacts."""
+    return inspect_public_rdap(domain)
 
 
 def main() -> None:
