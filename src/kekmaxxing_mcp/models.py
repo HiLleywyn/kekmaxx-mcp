@@ -30,7 +30,12 @@ def digest(value: str | bytes) -> str:
 def public_reference(url: str) -> str:
     """Offline syntax check for stored citations; network collection validates DNS."""
     parsed = urlsplit(url)
-    if parsed.scheme not in {"https", "http"} or not parsed.hostname or parsed.username:
+    if (
+        parsed.scheme not in {"https", "http"}
+        or not parsed.hostname
+        or parsed.username is not None
+        or parsed.password is not None
+    ):
         raise ValueError("Expected a public HTTP(S) citation without credentials")
     if parsed.port not in {None, 80, 443}:
         raise ValueError("Citation must use a standard web port")

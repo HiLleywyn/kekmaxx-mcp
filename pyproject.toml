@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "kekmaxxing-mcp"
-version = "0.2.1"
+version = "0.2.2"
 description = "Guarded MCP and CLI toolkit for reproducible public-source accountability research"
 readme = "README.md"
 license = { file = "LICENSE" }
@@ -45,6 +45,7 @@ dev = [
 kekmaxxing-mcp = "kekmaxxing_mcp.server:main"
 kekmaxxing-google-ads = "kekmaxxing_mcp.google_ads:main"
 kekmaxxing-meta-ads = "kekmaxxing_mcp.meta_ads_public:main"
+kekmaxxing-ad-archives = "kekmaxxing_mcp.public_ad_archives:main"
 kekmaxxing-fec = "kekmaxxing_mcp.fec:main"
 kekmaxxing-fcc = "kekmaxxing_mcp.fcc:main"
 kekmaxxing-procurement = "kekmaxxing_mcp.procurement:main"

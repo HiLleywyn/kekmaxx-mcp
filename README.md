@@ -124,6 +124,9 @@ Available MCP tools:
 - `compare_public_pages`
 - `google_ads_find_advertisers`
 - `public_meta_ad_ledger`
+- `recover_public_ad_destination_urls`
+- `recover_public_ad_archive_records`
+- `reconstruct_public_ad_campaign_records`
 - `fec_independent_expenditure_summary`
 - `fec_filing_schedule_e`
 - `fec_api_schedule_e`
@@ -165,6 +168,31 @@ documented public fields accepted by the MCP tool. Unknown fields are rejected
 to prevent accidental retention of cookies, tokens, arbitrary page state, or
 contact data. The result preserves ranges and distinguishes observed delivery
 from targeting criteria. It does not retrieve removed creative or bypass login.
+
+Unwrap a destination already embedded in a caller-supplied public redirect URL
+without making a network request:
+
+```bash
+kekmaxxing-ad-archives unwrap \
+  "https://redirect.example.org/out?u=https%3A%2F%2Fexample.org%2Farticle"
+```
+
+Look up already-known public ad or landing-page URLs in the Wayback CDX index
+and optionally explicit Common Crawl collections:
+
+```bash
+kekmaxxing-ad-archives archive \
+  "https://example.org/article" \
+  --commoncrawl CC-MAIN-2026-30 \
+  --output output/public-ad-archive-records.json
+```
+
+The MCP campaign-reconstruction tool connects exact advertiser IDs, collation
+IDs, creative hashes, and destination URLs from the same strict public-record
+format. These tools do not authenticate to Meta, inspect hidden endpoints, reuse
+cookies or access tokens, or evade removed-content and login controls. Archive
+misses are not evidence of absence, and recovered destinations do not establish
+ownership, payment, authorship, or coordination.
 
 Validate explicit public Telegram citations without enumerating channels or
 message IDs:

@@ -19,6 +19,11 @@ from .meta_ads_public import normalize_public_meta_ad_ledger
 from .passive import compare_pages, page_fingerprint, resolve_records, tls_certificate
 from .pdf_public import inspect_public_pdf
 from .procurement import load_fpds_award_history, load_usaspending_award
+from .public_ad_archives import (
+    lookup_public_ad_archives,
+    reconstruct_public_ad_campaign,
+    unwrap_public_redirect_urls,
+)
 from .rdap_public import inspect_public_rdap
 from .site_manifest import inspect_public_site_manifest
 from .snapshot_delta import compare_public_snapshots
@@ -90,6 +95,46 @@ def public_meta_ad_ledger(
     and personal contact data are not retained. Delivery is not targeting proof.
     """
     return normalize_public_meta_ad_ledger(records, source_url, observed_at)
+
+
+@mcp.tool()
+def recover_public_ad_destination_urls(urls: list[str], max_depth: int = 3) -> dict:
+    """Offline-unpack destination URLs explicitly embedded in supplied public links.
+
+    No URL is requested. Ambiguous destinations are reported rather than guessed,
+    and private, credential-bearing, or non-HTTP(S) targets are rejected.
+    """
+    return unwrap_public_redirect_urls(urls, max_depth=max_depth)
+
+
+@mcp.tool()
+def recover_public_ad_archive_records(
+    urls: list[str],
+    commoncrawl_collections: list[str] | None = None,
+    max_records: int = 50,
+) -> dict:
+    """Query public archives for already-known public ad or landing-page URLs.
+
+    This does not discover hidden URLs or bypass an ad platform. Missing captures
+    never establish that an advertisement or page did not exist.
+    """
+    return lookup_public_ad_archives(
+        urls,
+        commoncrawl_collections=commoncrawl_collections,
+        max_records=max_records,
+    )
+
+
+@mcp.tool()
+def reconstruct_public_ad_campaign_records(
+    records: list[dict[str, object]], source_url: str, observed_at: str = ""
+) -> dict:
+    """Connect exact advertiser IDs, collation IDs, creatives, and destinations.
+
+    Input is the same strict caller-observed public record format accepted by
+    public_meta_ad_ledger. Exact matches do not establish common ownership.
+    """
+    return reconstruct_public_ad_campaign(records, source_url, observed_at)
 
 
 @mcp.tool()
