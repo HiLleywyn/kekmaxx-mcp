@@ -105,6 +105,7 @@ Available MCP tools:
 - `usaspending_award_record`
 - `fpds_award_history`
 - `wordpress_public_identity_map`
+- `public_site_identity_map`
 - `wordpress_public_post_counts`
 
 ## Data CLIs
@@ -227,6 +228,16 @@ kekmaxxing-wordpress map-users \
   --site https://example-one.invalid \
   --site https://example-two.invalid \
   --output output/public-user-map.json
+```
+
+Cluster public sites by exact analytics destinations, public WordPress author
+fingerprints, stack markers, and cross-domain links:
+
+```bash
+kekmaxxing-wordpress map-sites \
+  --site https://example-one.invalid \
+  --site https://example-two.invalid \
+  --output output/public-site-map.json
 ```
 
 Collect a bounded, reproducible matrix of public post-search totals:

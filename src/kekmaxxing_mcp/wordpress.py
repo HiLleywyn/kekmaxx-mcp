@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import re
 from collections import defaultdict
@@ -10,12 +11,20 @@ from datetime import UTC, datetime
 from pathlib import Path
 from urllib.parse import urlencode, urlparse
 
+import httpx
+from bs4 import BeautifulSoup
+
 from .safety import public_get, validate_public_url
 
 MAX_SITES = 25
 MAX_TERMS = 25
 MAX_REQUESTS = 250
 AVATAR_HASH_RE = re.compile(r"/avatar/([0-9a-f]{32}|[0-9a-f]{64})(?:[?./]|$)", re.IGNORECASE)
+GA4_RE = re.compile(r"\bG-[A-Z0-9]{8,}\b", re.IGNORECASE)
+GTM_RE = re.compile(r"\bGTM-[A-Z0-9]+\b", re.IGNORECASE)
+UA_RE = re.compile(r"\bUA-\d{4,}-\d+\b", re.IGNORECASE)
+WP_THEME_RE = re.compile(r"/wp-content/themes/([a-z0-9._-]+)", re.IGNORECASE)
+WP_PLUGIN_RE = re.compile(r"/wp-content/plugins/([a-z0-9._-]+)", re.IGNORECASE)
 
 
 def _origin(url: str) -> str:
@@ -95,7 +104,7 @@ def map_public_user_fingerprints(site_urls: list[str]) -> dict:
     for site_url in site_urls:
         try:
             result = load_public_users(site_url)
-        except (RuntimeError, ValueError) as exc:
+        except (RuntimeError, ValueError, httpx.HTTPError) as exc:
             failures.append({"site": site_url, "error": str(exc)})
             continue
         sites.append(result)
@@ -126,6 +135,133 @@ def map_public_user_fingerprints(site_urls: list[str]) -> dict:
             "A repeated public Gravatar hash supports reuse of one account email or avatar "
             "identity across sites. It does not identify the real person, prove common legal "
             "ownership, or authorize attempts to recover the underlying email address."
+        ),
+    }
+
+
+def load_public_site_identity(site_url: str) -> dict:
+    """Read public HTML and REST metadata useful for comparing WordPress deployments."""
+    origin = _origin(site_url)
+    final_url, status, headers, body = public_get(origin, max_bytes=3_000_000)
+    text = body.decode("utf-8", errors="replace")
+    soup = BeautifulSoup(text, "html.parser")
+    generator = ""
+    generator_node = soup.find("meta", attrs={"name": re.compile("^generator$", re.I)})
+    if generator_node and generator_node.get("content"):
+        generator = str(generator_node.get("content")).strip()
+
+    absolute_links = sorted(
+        {
+            str(node.get(attribute)).strip()
+            for node in soup.find_all(True)
+            for attribute in ("href", "src", "action")
+            if node.get(attribute)
+            and str(node.get(attribute)).strip().lower().startswith(("http://", "https://"))
+        }
+    )
+    final_hostname = urlparse(final_url).hostname or ""
+    linked_hosts = sorted(
+        {
+            urlparse(link).hostname.lower()
+            for link in absolute_links
+            if urlparse(link).hostname
+            and "." in urlparse(link).hostname
+            and urlparse(link).hostname.lower() != final_hostname.lower()
+        }
+    )
+
+    users = []
+    users_error = None
+    try:
+        users = load_public_users(origin)["users"]
+    except (RuntimeError, ValueError, httpx.HTTPError) as exc:
+        users_error = str(exc)
+
+    themes = sorted({match.lower() for match in WP_THEME_RE.findall(text)})
+    plugins = sorted({match.lower() for match in WP_PLUGIN_RE.findall(text)})
+    stack_material = json.dumps(
+        {"generator": generator, "themes": themes, "plugins": plugins},
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+    return {
+        "site": origin,
+        "final_url": final_url,
+        "status": status,
+        "content_type": headers.get("content-type", ""),
+        "title": soup.title.get_text(" ", strip=True) if soup.title else "",
+        "html_sha256": hashlib.sha256(body).hexdigest(),
+        "analytics": {
+            "ga4_measurement_ids": sorted({item.upper() for item in GA4_RE.findall(text)}),
+            "google_tag_manager_ids": sorted({item.upper() for item in GTM_RE.findall(text)}),
+            "universal_analytics_ids": sorted({item.upper() for item in UA_RE.findall(text)}),
+        },
+        "wordpress": {
+            "generator": generator,
+            "themes": themes,
+            "plugins": plugins,
+            "stack_sha256": hashlib.sha256(stack_material.encode()).hexdigest(),
+            "public_users": users,
+            "public_users_error": users_error,
+        },
+        "linked_hosts": linked_hosts[:250],
+    }
+
+
+def map_public_site_identities(site_urls: list[str]) -> dict:
+    """Cluster public sites by exact analytics, WordPress, and cross-link fingerprints."""
+    if not site_urls or len(site_urls) > MAX_SITES:
+        raise ValueError(f"site_urls must contain between 1 and {MAX_SITES} public sites")
+
+    sites = []
+    failures = []
+    ga4: defaultdict[str, set[str]] = defaultdict(set)
+    gtm: defaultdict[str, set[str]] = defaultdict(set)
+    avatars: defaultdict[str, set[str]] = defaultdict(set)
+    stacks: defaultdict[str, set[str]] = defaultdict(set)
+    linked_hosts: defaultdict[str, set[str]] = defaultdict(set)
+    for site_url in site_urls:
+        try:
+            site = load_public_site_identity(site_url)
+        except (RuntimeError, ValueError, httpx.HTTPError) as exc:
+            failures.append({"site": site_url, "error": str(exc)})
+            continue
+        sites.append(site)
+        origin = site["site"]
+        for item in site["analytics"]["ga4_measurement_ids"]:
+            ga4[item].add(origin)
+        for item in site["analytics"]["google_tag_manager_ids"]:
+            gtm[item].add(origin)
+        for user in site["wordpress"]["public_users"]:
+            if user.get("avatar_hash"):
+                avatars[user["avatar_hash"]].add(origin)
+        stacks[site["wordpress"]["stack_sha256"]].add(origin)
+        for host in site["linked_hosts"]:
+            linked_hosts[host].add(origin)
+
+    def repeated(groups: dict[str, set[str]], key: str) -> list[dict]:
+        rows = [
+            {key: value, "sites": sorted(origins)}
+            for value, origins in groups.items()
+            if len(origins) > 1
+        ]
+        return sorted(rows, key=lambda row: (-len(row["sites"]), row[key]))
+
+    return {
+        "observed_at": datetime.now(UTC).isoformat(),
+        "sites": sites,
+        "failures": failures,
+        "repeated_ga4_measurement_ids": repeated(ga4, "measurement_id"),
+        "repeated_gtm_container_ids": repeated(gtm, "container_id"),
+        "repeated_avatar_hashes": repeated(avatars, "avatar_hash"),
+        "repeated_wordpress_stacks": repeated(stacks, "stack_sha256"),
+        "repeated_linked_hosts": repeated(linked_hosts, "linked_host"),
+        "caveat": (
+            "An exact repeated analytics identifier is evidence that page traffic is configured "
+            "to reach the same analytics destination. A repeated public Gravatar hash supports "
+            "reuse of one account identity. Exact stacks and shared hosts are weaker signals. "
+            "Any of these can reflect copied code, delegated services, or common tooling and do "
+            "not alone identify a person, establish legal ownership, or prove coordination."
         ),
     }
 
@@ -164,7 +300,7 @@ def public_post_search_counts(site_urls: list[str], terms: list[str], year: int)
                     raise RuntimeError("WordPress posts endpoint returned an unexpected response")
                 total = int(headers.get("x-wp-total", len(payload)))
                 rows.append({"site": origin, "term": term, "year": year, "total": total})
-            except (RuntimeError, ValueError) as exc:
+            except (RuntimeError, ValueError, httpx.HTTPError) as exc:
                 rows.append(
                     {"site": origin, "term": term, "year": year, "total": None, "error": str(exc)}
                 )
@@ -194,6 +330,11 @@ def main() -> int:
     users = sub.add_parser("map-users", help="map repeated public WordPress avatar fingerprints")
     users.add_argument("--site", action="append", required=True)
     users.add_argument("--output", type=Path)
+    identities = sub.add_parser(
+        "map-sites", help="cluster public sites by analytics and WordPress fingerprints"
+    )
+    identities.add_argument("--site", action="append", required=True)
+    identities.add_argument("--output", type=Path)
     counts = sub.add_parser("post-counts", help="collect bounded public post-search totals")
     counts.add_argument("--site", action="append", required=True)
     counts.add_argument("--term", action="append", required=True)
@@ -202,6 +343,8 @@ def main() -> int:
     args = parser.parse_args()
     if args.command == "map-users":
         result = map_public_user_fingerprints(args.site)
+    elif args.command == "map-sites":
+        result = map_public_site_identities(args.site)
     else:
         result = public_post_search_counts(args.site, args.term, args.year)
     _write_or_print(result, args.output)

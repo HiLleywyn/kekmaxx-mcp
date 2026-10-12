@@ -16,7 +16,11 @@ from .fec import (
 from .google_ads import find_advertisers
 from .passive import compare_pages, page_fingerprint, resolve_records, tls_certificate
 from .procurement import load_fpds_award_history, load_usaspending_award
-from .wordpress import map_public_user_fingerprints, public_post_search_counts
+from .wordpress import (
+    map_public_site_identities,
+    map_public_user_fingerprints,
+    public_post_search_counts,
+)
 
 mcp = FastMCP(
     "kekmaxxing",
@@ -138,6 +142,12 @@ def fpds_award_history(piid: str, max_entries: int = 50) -> dict:
 def wordpress_public_identity_map(site_urls: list[str]) -> dict:
     """Group repeated public WordPress/Gravatar fingerprints without resolving emails."""
     return map_public_user_fingerprints(site_urls)
+
+
+@mcp.tool()
+def public_site_identity_map(site_urls: list[str]) -> dict:
+    """Cluster public sites by exact analytics, WordPress, and cross-link fingerprints."""
+    return map_public_site_identities(site_urls)
 
 
 @mcp.tool()
