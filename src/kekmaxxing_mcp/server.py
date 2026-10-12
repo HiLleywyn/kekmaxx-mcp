@@ -5,7 +5,12 @@ from __future__ import annotations
 from mcp.server.fastmcp import FastMCP
 
 from .browser import browse
-from .fec import load_rows, load_schedule_e_filings, summarize_rows
+from .fec import (
+    load_openfec_schedule_e,
+    load_rows,
+    load_schedule_e_filings,
+    summarize_rows,
+)
 from .google_ads import find_advertisers
 from .passive import compare_pages, page_fingerprint, resolve_records, tls_certificate
 
@@ -69,6 +74,16 @@ def fec_independent_expenditure_summary(
 def fec_filing_schedule_e(file_numbers: list[str]) -> list[dict[str, str]]:
     """Normalize Schedule E rows from public FEC electronic filing numbers."""
     return load_schedule_e_filings(file_numbers)
+
+
+@mcp.tool()
+def fec_api_schedule_e(committee_id: str, cycle: int, max_pages: int = 100) -> dict:
+    """Fetch OpenFEC Schedule E records with correct keyset pagination.
+
+    Requires FEC_API_KEY in the MCP server process environment. The key is not
+    accepted as a tool argument and is never returned in tool output.
+    """
+    return load_openfec_schedule_e(committee_id, cycle, max_pages=max_pages)
 
 
 def main() -> None:

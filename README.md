@@ -136,6 +136,23 @@ kekmaxxing-fec filing-schedule-e \
   --output output/fec-schedule-e.csv
 ```
 
+For the processed OpenFEC API, set `FEC_API_KEY` in the MCP server process and
+use the keyset-paginated client:
+
+```bash
+kekmaxxing-fec api-schedule-e \
+  --committee-id C00000000 \
+  --cycle 2026 \
+  --output output/openfec-schedule-e.json
+```
+
+OpenFEC Schedule E exposes a `last_indexes` cursor. Ordinary `page=` pagination
+can silently repeat the first 100 records, so this client advances with the
+cursor and aborts if it stops moving. The key is read only from the process
+environment; it is not accepted as an MCP argument, printed, or written to the
+output. Because OpenFEC is a processed nightly layer, reconcile time-sensitive
+work against primary filing CSV/HTML and FEC bulk exports.
+
 Schedule E amounts are reported candidate allocations. The tool does not label
 them as invoices, cash payments, or verified advertising delivery.
 

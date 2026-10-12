@@ -2,7 +2,12 @@ from __future__ import annotations
 
 import pytest
 
-from kekmaxxing_mcp.fec import filing_csv_url, normalize_schedule_e, summarize_rows
+from kekmaxxing_mcp.fec import (
+    filing_csv_url,
+    next_schedule_e_cursor,
+    normalize_schedule_e,
+    summarize_rows,
+)
 
 
 def test_fec_summary_groups_public_rows() -> None:
@@ -94,3 +99,24 @@ def test_normalize_schedule_e_preserves_provenance() -> None:
     assert result[0]["candidate_name"] == "JANE DOE"
     assert result[0]["signer_name"] == "SAM SMITH"
     assert result[0]["expenditure_amount"] == "250453.00"
+
+
+def test_schedule_e_cursor_uses_keyset_not_page_number() -> None:
+    pagination = {
+        "count": 948,
+        "last_indexes": {
+            "last_index": "4100320261600422395",
+            "last_expenditure_date": "2026-09-28",
+        },
+    }
+    cursor = next_schedule_e_cursor(pagination)
+    assert cursor == {
+        "last_index": "4100320261600422395",
+        "last_expenditure_date": "2026-09-28",
+    }
+    with pytest.raises(RuntimeError, match="did not advance"):
+        next_schedule_e_cursor(pagination, cursor)
+
+
+def test_schedule_e_cursor_stops_without_complete_last_indexes() -> None:
+    assert next_schedule_e_cursor({"last_indexes": {"last_index": "123"}}) is None

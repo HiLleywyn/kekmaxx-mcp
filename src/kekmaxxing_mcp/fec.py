@@ -6,16 +6,21 @@ import argparse
 import csv
 import io
 import json
+import os
 import re
 import time
 from collections import defaultdict
 from datetime import UTC, datetime
 from pathlib import Path
 
-from .safety import public_get
+import httpx
+
+from .safety import public_get, validate_public_url
 
 
 FILE_NUMBER_RE = re.compile(r"^[1-9][0-9]{6,8}$")
+COMMITTEE_ID_RE = re.compile(r"^C[0-9]{8}$")
+OPENFEC_SCHEDULE_E_URL = "https://api.open.fec.gov/v1/schedules/schedule_e/"
 
 
 def bulk_url(cycle: int) -> str:
@@ -125,6 +130,118 @@ def load_schedule_e_filings(
     return output
 
 
+def next_schedule_e_cursor(
+    pagination: dict, previous: dict[str, str] | None = None
+) -> dict[str, str] | None:
+    """Extract and validate the OpenFEC Schedule E keyset cursor.
+
+    Schedule E does not reliably advance with ordinary page numbers. The API's
+    ``last_indexes`` values must be returned on the next request.
+    """
+    indexes = pagination.get("last_indexes") or {}
+    required = ("last_index", "last_expenditure_date")
+    if not all(indexes.get(key) not in (None, "") for key in required):
+        return None
+    cursor = {key: str(indexes[key]) for key in required}
+    if previous == cursor:
+        raise RuntimeError("OpenFEC Schedule E cursor did not advance")
+    return cursor
+
+
+def _openfec_schedule_e_page(params: dict[str, object], api_key: str) -> dict:
+    validate_public_url(OPENFEC_SCHEDULE_E_URL)
+    safe_params = dict(params)
+    safe_params["api_key"] = api_key
+    try:
+        response = httpx.get(
+            OPENFEC_SCHEDULE_E_URL,
+            params=safe_params,
+            headers={"User-Agent": "Kekmaxxing-MCP/0.1 (+public-source-research)"},
+            follow_redirects=False,
+            timeout=60,
+        )
+    except httpx.HTTPError as exc:
+        raise RuntimeError("OpenFEC request failed") from exc
+    if response.status_code != 200:
+        raise RuntimeError(f"OpenFEC returned HTTP {response.status_code}")
+    try:
+        payload = response.json()
+    except ValueError as exc:
+        raise RuntimeError("OpenFEC returned invalid JSON") from exc
+    if not isinstance(payload, dict):
+        raise RuntimeError("OpenFEC returned an unexpected response")
+    return payload
+
+
+def load_openfec_schedule_e(
+    committee_id: str,
+    cycle: int,
+    *,
+    max_pages: int = 100,
+    api_key: str | None = None,
+) -> dict:
+    """Load a committee's Schedule E rows using keyset pagination.
+
+    The credential is read from ``FEC_API_KEY`` unless supplied by trusted
+    calling code. It is never returned, printed, or written to disk.
+    """
+    committee = committee_id.upper()
+    if not COMMITTEE_ID_RE.fullmatch(committee):
+        raise ValueError("Expected an FEC committee ID such as C00123456")
+    current = datetime.now(UTC).year
+    if cycle % 2 or cycle < 2000 or cycle > current + 2:
+        raise ValueError("Cycle must be an even election year between 2000 and the next cycle")
+    if max_pages < 1 or max_pages > 500:
+        raise ValueError("max_pages must be between 1 and 500")
+    secret = api_key or os.environ.get("FEC_API_KEY", "")
+    if not secret:
+        raise RuntimeError("Set FEC_API_KEY in the process environment")
+
+    base_params: dict[str, object] = {
+        "committee_id": committee,
+        "two_year_transaction_period": cycle,
+        "per_page": 100,
+        "sort": "-expenditure_date",
+    }
+    cursor: dict[str, str] | None = None
+    results: list[dict] = []
+    pages = 0
+    expected_count: int | None = None
+    for _ in range(max_pages):
+        params = {**base_params, **(cursor or {})}
+        payload = _openfec_schedule_e_page(params, secret)
+        page_results = payload.get("results") or []
+        if not isinstance(page_results, list):
+            raise RuntimeError("OpenFEC results field was not a list")
+        pages += 1
+        results.extend(page_results)
+        pagination = payload.get("pagination") or {}
+        if expected_count is None and pagination.get("count") is not None:
+            expected_count = int(pagination["count"])
+        if not page_results or (expected_count is not None and len(results) >= expected_count):
+            break
+        next_cursor = next_schedule_e_cursor(pagination, cursor)
+        if next_cursor is None:
+            break
+        cursor = next_cursor
+    else:
+        raise RuntimeError("OpenFEC Schedule E pagination reached max_pages before completion")
+
+    return {
+        "committee_id": committee,
+        "cycle": cycle,
+        "source_endpoint": OPENFEC_SCHEDULE_E_URL,
+        "pages_fetched": pages,
+        "reported_count": expected_count,
+        "records_fetched": len(results),
+        "results": results,
+        "caveat": (
+            "OpenFEC is a processed nightly data layer and can lag primary filing HTML/CSV "
+            "or the FEC bulk export. Reconcile time-sensitive work against those sources."
+        ),
+    }
+
+
 def load_rows(cycle: int, committee_ids: set[str]) -> list[dict[str, str]]:
     if not committee_ids or len(committee_ids) > 100:
         raise ValueError("Provide between 1 and 100 committee IDs")
@@ -204,7 +321,26 @@ def main() -> int:
     filings.add_argument("--file-number", required=True, action="append")
     filings.add_argument("--output", required=True, type=Path)
     filings.add_argument("--delay-seconds", type=float, default=0.25)
+    api_schedule_e = sub.add_parser(
+        "api-schedule-e",
+        help="fetch Schedule E through OpenFEC using FEC_API_KEY and keyset pagination",
+    )
+    api_schedule_e.add_argument("--committee-id", required=True)
+    api_schedule_e.add_argument("--cycle", required=True, type=int)
+    api_schedule_e.add_argument("--output", required=True, type=Path)
+    api_schedule_e.add_argument("--max-pages", type=int, default=100)
     args = parser.parse_args()
+    if args.command == "api-schedule-e":
+        payload = load_openfec_schedule_e(
+            args.committee_id, args.cycle, max_pages=args.max_pages
+        )
+        args.output.parent.mkdir(parents=True, exist_ok=True)
+        args.output.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+        print(
+            f"wrote {payload['records_fetched']:,} Schedule E records "
+            f"from {payload['pages_fetched']:,} API pages"
+        )
+        return 0
     if args.command == "filing-schedule-e":
         rows = load_schedule_e_filings(args.file_number, delay_seconds=args.delay_seconds)
         args.output.parent.mkdir(parents=True, exist_ok=True)
