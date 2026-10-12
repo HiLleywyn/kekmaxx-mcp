@@ -36,6 +36,39 @@ def _number(value: object) -> int | None:
     return value if isinstance(value, int) and not isinstance(value, bool) else None
 
 
+def _linked_status(value: object) -> dict | None:
+    """Normalize a public quoted/reposted status without retaining bulky media payloads."""
+    if not isinstance(value, dict):
+        return None
+    author = value.get("author")
+    if not isinstance(author, dict):
+        author = {}
+    return {
+        "id": str(value.get("id")) if value.get("id") is not None else None,
+        "url": value.get("url"),
+        "text": value.get("text"),
+        "created_at": value.get("created_at"),
+        "language": value.get("lang"),
+        "metrics_snapshot": {
+            "views": _number(value.get("views")),
+            "likes": _number(value.get("likes")),
+            "reposts": _number(value.get("reposts")),
+            "quotes": _number(value.get("quotes")),
+            "replies": _number(value.get("replies")),
+            "bookmarks": _number(value.get("bookmarks")),
+        },
+        "author": {
+            "id": author.get("id"),
+            "screen_name": author.get("screen_name"),
+            "name": author.get("name"),
+            "url": author.get("url"),
+            "description": author.get("description"),
+            "followers_snapshot": _number(author.get("followers")),
+            "protected": author.get("protected"),
+        },
+    }
+
+
 def resolve_public_x_status(reference: str) -> dict:
     """Return a bounded, normalized snapshot of one already-known public X post.
 
@@ -111,6 +144,7 @@ def resolve_public_x_status(reference: str) -> dict:
                 for item in media_items[:20]
                 if isinstance(item, dict)
             ],
+            "quoted_post": _linked_status(status.get("quote")),
         },
         "author": {
             "id": author.get("id"),
@@ -129,6 +163,10 @@ def resolve_public_x_status(reference: str) -> dict:
             "FxTwitter is a third-party public API, not an official X archive.",
             "Metrics and profile fields are point-in-time values and can change.",
             "A public profile link supports a public brand connection, not common administration.",
+            (
+                "A quote-post is a public source relationship, not proof of shared "
+                "control or approval."
+            ),
             "The resolver accepts one known status ID and does not enumerate or search accounts.",
         ],
     }

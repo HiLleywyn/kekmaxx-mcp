@@ -57,6 +57,21 @@ def test_resolve_normalizes_public_fields(monkeypatch: pytest.MonkeyPatch) -> No
                 "verification": {"verified": True},
             },
             "media": {"all": [{"id": "9", "type": "photo", "url": "https://img.test/9"}]},
+            "quote": {
+                "id": "1976000000000000000",
+                "url": "https://x.com/Source/status/1976000000000000000",
+                "text": "Quoted public source",
+                "created_at": "Thu Oct 09 14:14:41 +0000 2025",
+                "lang": "en",
+                "views": 99,
+                "author": {
+                    "id": "200",
+                    "screen_name": "Source",
+                    "name": "Source Name",
+                    "followers": 250,
+                    "protected": False,
+                },
+            },
         },
     }
 
@@ -75,6 +90,9 @@ def test_resolve_normalizes_public_fields(monkeypatch: pytest.MonkeyPatch) -> No
     assert result["post"]["metrics_snapshot"]["views"] == 123
     assert result["author"]["screen_name"] == "Example"
     assert result["author"]["public_website"] == "https://example.org"
+    assert result["post"]["quoted_post"]["id"] == "1976000000000000000"
+    assert result["post"]["quoted_post"]["author"]["screen_name"] == "Source"
+    assert result["post"]["quoted_post"]["metrics_snapshot"]["views"] == 99
     assert len(result["source"]["response_sha256"]) == 64
 
 

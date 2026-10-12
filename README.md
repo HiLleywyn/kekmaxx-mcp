@@ -304,9 +304,12 @@ kekmaxxing-x \
 
 This uses FxTwitter's third-party public API and records a retrieval timestamp
 and SHA-256 hash of the returned JSON. Profile and engagement fields are
-point-in-time values. The command does not search or enumerate accounts, and a
-public cross-platform profile link is evidence of a public brand relationship,
-not proof of common administration. FxTwitter's list/search endpoints have had
+point-in-time values. When present, a quote-post and its public author are
+normalized too, allowing a dated source-to-carrier edge to be preserved without
+retaining the API's bulky media payload. The command does not search or enumerate
+accounts, and a public cross-platform profile link is evidence of a public brand
+relationship, not proof of common administration. A quote-post demonstrates
+public sourcing, not shared control. FxTwitter's list/search endpoints have had
 intermittent 404 failures, so this tool intentionally resolves only a known
 status ID.
 
