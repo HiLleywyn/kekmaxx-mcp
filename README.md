@@ -15,6 +15,7 @@ It combines:
 - USAspending award retrieval and FPDS transaction-timeline normalization; and
 - public WordPress byline-fingerprint comparison and bounded post-search counts; and
 - local public-post timeline comparison for outage and event-correlation tests; and
+- single-post public X resolution through FxTwitter with evidence hashes and explicit caveats; and
 - an optional dedicated-WSL/WireGuard layout that keeps research traffic
   separate from ordinary browsers and Docker workloads.
 
@@ -110,6 +111,7 @@ Available MCP tools:
 - `public_checkout_identity_map`
 - `wordpress_public_post_counts`
 - `public_post_event_timeline`
+- `public_x_status`
 
 ## Data CLIs
 
@@ -287,6 +289,22 @@ both inside the loaded set and to outside Telegram channels so associates can
 be triaged without treating a citation as proof of common control. Posting
 continuity can disprove a claimed outage dependency, but silence alone cannot
 prove hosting, automation, nationality, or common control.
+
+Resolve one already-known public X status into a bounded JSON snapshot:
+
+```bash
+kekmaxxing-x \
+  https://x.com/example/status/1900000000000000000 \
+  --output output/public-x-status.json
+```
+
+This uses FxTwitter's third-party public API and records a retrieval timestamp
+and SHA-256 hash of the returned JSON. Profile and engagement fields are
+point-in-time values. The command does not search or enumerate accounts, and a
+public cross-platform profile link is evidence of a public brand relationship,
+not proof of common administration. FxTwitter's list/search endpoints have had
+intermittent 404 failures, so this tool intentionally resolves only a known
+status ID.
 
 See [Methodology](docs/METHODOLOGY.md), [VPN isolation](docs/VPN-ISOLATION.md),
 and [privacy and release checks](docs/PRIVACY.md).

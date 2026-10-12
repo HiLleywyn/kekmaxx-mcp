@@ -11,12 +11,26 @@ from mcp.client.stdio import stdio_client
 
 EXPECTED = {
     "browse_page",
-    "inspect_public_page",
-    "resolve_dns",
-    "inspect_tls_certificate",
     "compare_public_pages",
-    "google_ads_find_advertisers",
+    "fcc_file_details",
+    "fcc_public_file_download_url",
+    "fcc_search_entity_files",
+    "fec_api_schedule_e",
+    "fec_filing_schedule_e",
     "fec_independent_expenditure_summary",
+    "fec_treasurer_service_baseline",
+    "fpds_award_history",
+    "google_ads_find_advertisers",
+    "inspect_public_page",
+    "inspect_tls_certificate",
+    "public_checkout_identity_map",
+    "public_post_event_timeline",
+    "public_site_identity_map",
+    "public_x_status",
+    "resolve_dns",
+    "usaspending_award_record",
+    "wordpress_public_identity_map",
+    "wordpress_public_post_counts",
 }
 
 

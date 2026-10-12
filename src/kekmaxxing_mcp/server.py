@@ -23,6 +23,7 @@ from .wordpress import (
     map_public_user_fingerprints,
     public_post_search_counts,
 )
+from .x_public import resolve_public_x_status
 
 mcp = FastMCP(
     "kekmaxxing",
@@ -179,6 +180,16 @@ def public_post_event_timeline(
         event_start=event_start,
         event_end=event_end,
     )
+
+
+@mcp.tool()
+def public_x_status(status: str) -> dict:
+    """Resolve one known public X post through FxTwitter's public API.
+
+    Returns a point-in-time public snapshot and raw-response hash. FxTwitter is
+    a third-party service; the result is not proof of account administration.
+    """
+    return resolve_public_x_status(status)
 
 
 def main() -> None:
