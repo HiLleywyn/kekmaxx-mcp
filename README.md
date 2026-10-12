@@ -129,6 +129,8 @@ Available MCP tools:
 - `public_pdf_provenance`
 - `public_site_manifest`
 - `public_rdap_snapshot`
+- `tse_candidate_account_search`
+- `tse_candidate_account_delta`
 
 ## Data CLIs
 
@@ -203,6 +205,33 @@ The result keeps domain dates, nameservers, statuses, DNSSEC state, and registra
 identity while deliberately omitting registrant, administrative, technical,
 abuse, email, phone, and address fields. Close registration timing or shared
 providers do not by themselves establish common control.
+
+Search an official TSE candidate-account ZIP without extracting the full archive:
+
+```bash
+kekmaxxing-tse-accounts \
+  prestacao_de_contas_eleitorais_candidatos_2026.zip \
+  --campaign-cnpj 00000000000000 \
+  --term "example vendor" \
+  --term "example domain" \
+  --output output/tse-account-search.json
+```
+
+On a later disclosure date, compare a previous and current archive:
+
+```bash
+kekmaxxing-tse-accounts current.zip \
+  --previous previous.zip \
+  --campaign-cnpj 00000000000000 \
+  --term "example vendor" \
+  --output output/tse-account-delta.json
+```
+
+The scanner streams the selected UF member, hashes each source archive, records
+report/generation dates, totals the selected campaign, and performs literal,
+accent-insensitive searches. Individual tax identifiers and addresses are
+omitted. Missing strings remain time-bounded negative findings; brand/legal-name
+differences, in-kind activity, amendments, and later reports can change the result.
 
 Search Google's official advertiser index:
 

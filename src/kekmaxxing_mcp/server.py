@@ -22,6 +22,7 @@ from .rdap_public import inspect_public_rdap
 from .site_manifest import inspect_public_site_manifest
 from .telegram_public import probe_public_telegram_history
 from .timeline import analyze_public_post_timelines as analyze_timelines
+from .tse_accounts import compare_tse_candidate_accounts, inspect_tse_candidate_accounts
 from .wordpress import (
     map_public_checkout_identities,
     map_public_site_identities,
@@ -254,6 +255,51 @@ def public_site_manifest(
 def public_rdap_snapshot(domain: str) -> dict:
     """Preserve domain dates, nameservers, status, and registrar without registrant contacts."""
     return inspect_public_rdap(domain)
+
+
+@mcp.tool()
+def tse_candidate_account_search(
+    archive_path: str,
+    campaign_cnpj: str,
+    terms: list[str],
+    uf: str = "BR",
+    max_matches: int = 200,
+) -> dict:
+    """Search one local official TSE account ZIP for a campaign and bounded public terms.
+
+    Individual tax identifiers and addresses are omitted. A missing match is a
+    time-bounded negative result, not proof that no payment or relationship exists.
+    """
+    return inspect_tse_candidate_accounts(
+        archive_path,
+        campaign_cnpj,
+        terms,
+        uf=uf,
+        max_matches=max_matches,
+    )
+
+
+@mcp.tool()
+def tse_candidate_account_delta(
+    previous_archive_path: str,
+    current_archive_path: str,
+    campaign_cnpj: str,
+    terms: list[str],
+    uf: str = "BR",
+    max_matches: int = 200,
+) -> dict:
+    """Compare two local official TSE archives for new, removed, and term-matching rows.
+
+    Removals can be ordinary amendments or corrections and are not evidence of concealment.
+    """
+    return compare_tse_candidate_accounts(
+        previous_archive_path,
+        current_archive_path,
+        campaign_cnpj,
+        terms,
+        uf=uf,
+        max_matches=max_matches,
+    )
 
 
 def main() -> None:

@@ -49,6 +49,7 @@ kekmaxxing-telegram-history = "kekmaxxing_mcp.telegram_public:main"
 kekmaxxing-pdf = "kekmaxxing_mcp.pdf_public:main"
 kekmaxxing-site-manifest = "kekmaxxing_mcp.site_manifest:main"
 kekmaxxing-rdap = "kekmaxxing_mcp.rdap_public:main"
+kekmaxxing-tse-accounts = "kekmaxxing_mcp.tse_accounts:main"
 kekmaxxing-install-browser = "kekmaxxing_mcp.install_browser:main"
 
 [tool.hatch.build.targets.wheel]
