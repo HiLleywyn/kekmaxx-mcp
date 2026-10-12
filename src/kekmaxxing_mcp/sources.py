@@ -7,7 +7,7 @@ import re
 import threading
 import time
 import xml.etree.ElementTree as ET
-from urllib.parse import urlencode, urlsplit
+from urllib.parse import urlencode, urlsplit, urlunsplit
 
 from pydantic import Field
 
@@ -137,7 +137,7 @@ def endpoint(source, query, *, page=1, limit=50, collection="", start="", end=""
             }
         )
     if source == "commoncrawl":
-        public_reference(query)
+        query = _commoncrawl_pattern(query)
         if not re.fullmatch(r"CC-MAIN-\d{4}-\d{2}", collection):
             raise ValueError("Supply an explicit Common Crawl collection ID")
         return f"https://index.commoncrawl.org/{collection}-index?" + urlencode(
@@ -159,6 +159,22 @@ def endpoint(source, query, *, page=1, limit=50, collection="", start="", end=""
     if source in DEFERRED:
         raise ValueError(DEFERRED[source])
     raise ValueError("Unsupported public source")
+
+
+def _commoncrawl_pattern(query: str) -> str:
+    """Validate one bounded Common Crawl URL pattern without resolving it."""
+    pattern = query.strip()
+    if not pattern or len(pattern) > 500 or pattern.count("*") > 2:
+        raise ValueError("Common Crawl requires one bounded public URL pattern")
+    candidate = pattern if "://" in pattern else f"https://{pattern}"
+    parsed = urlsplit(candidate)
+    if parsed.query or parsed.fragment or parsed.username or parsed.password:
+        raise ValueError("Common Crawl patterns cannot contain credentials, queries, or fragments")
+    safe_host = (parsed.hostname or "").replace("*", "www")
+    safe_path = parsed.path.replace("*", "wildcard") or "/"
+    safe = urlunsplit((parsed.scheme, safe_host, safe_path, "", ""))
+    public_reference(safe)
+    return pattern
 
 
 def _rss(body, limit):

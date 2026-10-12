@@ -100,6 +100,25 @@ def test_connector_budgets_external_requirements_and_partial_failures(monkeypatc
     assert not result["complete"] and not result["results"][0]["ok"]
 
 
+def test_commoncrawl_accepts_public_domain_patterns_and_rejects_unsafe_patterns():
+    endpoint = sources.endpoint(
+        "commoncrawl",
+        "example.org/*",
+        collection="CC-MAIN-2026-39",
+        limit=25,
+    )
+    assert "url=example.org%2F%2A" in endpoint
+    full = sources.endpoint(
+        "commoncrawl",
+        "https://example.org/news/*",
+        collection="CC-MAIN-2026-39",
+    )
+    assert "https%3A%2F%2Fexample.org%2Fnews%2F%2A" in full
+    for value in ["localhost/*", "http://127.0.0.1/*", "https://user@example.org/*"]:
+        with pytest.raises(ValueError):
+            sources.endpoint("commoncrawl", value, collection="CC-MAIN-2026-39")
+
+
 def test_money_amendments_unrelated_vendor_clients_and_conflicts():
     def row(transaction, revision, amount, payer="one", measure="reported_expenditure"):
         return dict(

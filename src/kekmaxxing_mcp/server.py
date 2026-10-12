@@ -15,6 +15,7 @@ from .fec import (
     summarize_rows,
 )
 from .google_ads import find_advertisers
+from .meta_ads_public import normalize_public_meta_ad_ledger
 from .passive import compare_pages, page_fingerprint, resolve_records, tls_certificate
 from .pdf_public import inspect_public_pdf
 from .procurement import load_fpds_award_history, load_usaspending_award
@@ -77,6 +78,18 @@ def compare_public_pages(left_url: str, right_url: str) -> dict:
 def google_ads_find_advertisers(terms: list[str], max_results: int = 50) -> list[dict[str, str]]:
     """Search advertiser names and public IDs in Google's official political-ad archive."""
     return find_advertisers(terms, max_results)
+
+
+@mcp.tool()
+def public_meta_ad_ledger(
+    records: list[dict[str, object]], source_url: str, observed_at: str = ""
+) -> dict:
+    """Normalize caller-observed public Meta Ad Library records without fetching Meta.
+
+    Unknown fields are rejected so credentials, cookies, arbitrary page payloads,
+    and personal contact data are not retained. Delivery is not targeting proof.
+    """
+    return normalize_public_meta_ad_ledger(records, source_url, observed_at)
 
 
 @mcp.tool()

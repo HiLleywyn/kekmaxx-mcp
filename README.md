@@ -10,6 +10,7 @@ It combines:
   no personal browser profile, and no authenticated actions;
 - passive DNS, HTTP-header, TLS-certificate, and HTML-fingerprint comparison;
 - Google Political Advertising Transparency archive search and extraction;
+- local normalization of caller-observed public Meta Ad Library ledgers without fetching Meta;
 - FEC independent-expenditure filtering and aggregation; and
 - source-linked normalization of Schedule E rows from public FEC electronic filings;
 - read-only FCC public-file metadata search for known station/entity IDs; and
@@ -122,6 +123,7 @@ Available MCP tools:
 - `inspect_tls_certificate`
 - `compare_public_pages`
 - `google_ads_find_advertisers`
+- `public_meta_ad_ledger`
 - `fec_independent_expenditure_summary`
 - `fec_filing_schedule_e`
 - `fec_api_schedule_e`
@@ -147,6 +149,22 @@ Available MCP tools:
 - `tse_candidate_account_delta`
 
 ## Data CLIs
+
+Normalize a manually preserved public Meta Ad Library ledger without giving the
+tool credentials, cookies, or a browser profile:
+
+```bash
+kekmaxxing-meta-ads public-meta-records.json \
+  --source-url "https://www.facebook.com/ads/library/?..." \
+  --observed-at "2026-10-12T18:00:00-05:00" \
+  --output output/meta-ad-ledger.json
+```
+
+The input must be a JSON array (or an object with a `records` array) using the
+documented public fields accepted by the MCP tool. Unknown fields are rejected
+to prevent accidental retention of cookies, tokens, arbitrary page state, or
+contact data. The result preserves ranges and distinguishes observed delivery
+from targeting criteria. It does not retrieve removed creative or bypass login.
 
 Validate explicit public Telegram citations without enumerating channels or
 message IDs:
