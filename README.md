@@ -161,6 +161,8 @@ Available MCP tools:
 - `public_pdf_provenance`
 - `public_site_manifest`
 - `public_content_factory_fingerprint`
+- `public_generator_health`
+- `public_feed_media_correlation`
 - `public_snapshot_delta`
 - `public_rdap_snapshot`
 - `tse_candidate_account_search`

@@ -31,6 +31,10 @@ from .public_ad_archives import (
     reconstruct_public_ad_campaign,
     unwrap_public_redirect_urls,
 )
+from .publishing_pipeline import (
+    correlate_public_feed_media,
+    inspect_public_generator_health,
+)
 from .rdap_public import inspect_public_rdap
 from .site_manifest import inspect_public_site_manifest
 from .snapshot_delta import compare_public_snapshots
@@ -395,6 +399,30 @@ def public_content_factory_fingerprint(
     political sponsorship, or intent. Collection is bounded and GET-only.
     """
     return fingerprint_public_content_network(site_urls, sample_urls)
+
+
+@mcp.tool()
+def public_generator_health(
+    site_urls: list[str],
+    health_path: str = "/health.json",
+    fields: list[str] | None = None,
+) -> dict:
+    """Read bounded public generator-health metadata without authentication.
+
+    Only allowlisted JSON fields are retained. Software/database labels can
+    establish technical assignment, but not ownership or operator identity.
+    """
+    return inspect_public_generator_health(site_urls, health_path, fields)
+
+
+@mcp.tool()
+def public_feed_media_correlation(feed_url: str, page_urls: list[str]) -> dict:
+    """Match exact public feed-media keys against up to 60 public pages.
+
+    Exact media reuse is a source/copy lead. Shared stock images require title,
+    timing, and text corroboration before attribution.
+    """
+    return correlate_public_feed_media(feed_url, page_urls)
 
 
 @mcp.tool()
