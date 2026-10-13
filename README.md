@@ -37,6 +37,8 @@ It combines:
   contact details from change excerpts; and
 - privacy-minimized RDAP snapshots that preserve registration dates,
   nameservers, registrar, and status while omitting registrant contacts; and
+- privacy-minimized URLScan public-index searches that preserve bounded scan,
+  page, network, result, and screenshot metadata while omitting submitter data; and
 - local decoding of nested public ad redirects, Meta campaign macros, and
   privacy-minimized browser-fingerprint payloads without opening destinations; and
 - passive inspection of caller-selected archived ad routers for campaign keys,
@@ -139,6 +141,8 @@ Available MCP tools:
 - `public_meta_ad_ledger`
 - `recover_public_ad_destination_urls`
 - `recover_public_ad_archive_records`
+- `search_public_scan_archive`
+- `inspect_public_scan_result`
 - `reconstruct_public_ad_campaign_records`
 - `fec_independent_expenditure_summary`
 - `fec_filing_schedule_e`

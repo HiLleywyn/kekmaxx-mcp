@@ -31,6 +31,8 @@ from .public_ad_archives import (
     reconstruct_public_ad_campaign,
     unwrap_public_redirect_urls,
 )
+from .public_scan_archives import search_public_urlscan
+from .public_scan_results import inspect_public_urlscan_result
 from .publishing_pipeline import (
     correlate_public_feed_media,
     inspect_public_generator_health,
@@ -190,6 +192,28 @@ def recover_public_ad_archive_records(
         commoncrawl_collections=commoncrawl_collections,
         max_records=max_records,
     )
+
+
+@mcp.tool()
+def search_public_scan_archive(query: str, max_results: int = 100) -> dict:
+    """Search privacy-minimized URLScan public metadata without visiting scan targets.
+
+    Query matches are third-party observations, not operator attribution or proof
+    that the final page owns every resource seen in its scan.
+    """
+    return search_public_urlscan(query, max_results=max_results)
+
+
+@mcp.tool()
+def inspect_public_scan_result(
+    scan_id: str, host_filters: list[str], max_records: int = 500
+) -> dict:
+    """Extract privacy-minimized request paths for named hosts from a public scan.
+
+    The tool visits only URLScan, not the scanned target or recorded resources.
+    Query values, headers, cookies, and response bodies are omitted.
+    """
+    return inspect_public_urlscan_result(scan_id, host_filters, max_records=max_records)
 
 
 @mcp.tool()
