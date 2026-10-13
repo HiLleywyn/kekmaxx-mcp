@@ -6,6 +6,7 @@ import html
 import json
 import re
 import xml.etree.ElementTree as ET
+from collections import defaultdict
 from datetime import UTC, datetime
 from urllib.parse import urljoin, urlparse
 
@@ -21,6 +22,12 @@ DEFAULT_HEALTH_FIELDS = (
     "ok", "generator", "version", "domain", "domain_id", "database_id", "status"
 )
 ASSET_URL_RE = re.compile(r"https?://[^\"'<>\s)]+", re.I)
+STOP_WORDS = {
+    "about", "after", "against", "and", "are", "but", "for", "from", "has",
+    "have", "how", "into", "its", "more", "new", "not", "over", "says", "that",
+    "the", "their", "this", "through", "today", "video", "videos", "what", "when",
+    "where", "which", "who", "why", "will", "with",
+}
 
 
 def _origin(url: str) -> str:
@@ -42,6 +49,14 @@ def _clean(value: str) -> str:
 def _asset_key(value: str) -> str | None:
     basename = urlparse(value).path.rsplit("/", 1)[-1].casefold()
     return basename if len(basename) >= 12 and "." in basename else None
+
+
+def _title_terms(value: str) -> set[str]:
+    return {
+        token
+        for token in re.findall(r"[a-z0-9]+", html.unescape(value).casefold())
+        if len(token) > 2 and token not in STOP_WORDS
+    }
 
 
 def inspect_public_generator_health(
@@ -158,7 +173,10 @@ def correlate_public_feed_media(feed_url: str, page_urls: list[str]) -> dict[str
     if feed_status != 200:
         raise ValueError(f"feed_url returned HTTP {feed_status}")
     items = _feed_items(feed_body, final_feed)
-    by_asset = {key: item for item in items for key in item["assets"]}
+    by_asset: defaultdict[str, list[dict[str, object]]] = defaultdict(list)
+    for item in items:
+        for key in item["assets"]:
+            by_asset[key].append(item)
 
     matches: list[dict[str, object]] = []
     failures: list[dict[str, str]] = []
@@ -190,17 +208,43 @@ def correlate_public_feed_media(feed_url: str, page_urls: list[str]) -> dict[str
                 for node in soup.find_all("a", href=True)
             }
             for key in sorted(set(page_assets).intersection(by_asset)):
-                item = by_asset[key]
+                candidates = by_asset[key]
+                page_title = soup.title.get_text(" ", strip=True) if soup.title else ""
+                page_terms = _title_terms(page_title)
+                scored = [
+                    (
+                        len(page_terms.intersection(_title_terms(str(item["title"])))),
+                        item,
+                    )
+                    for item in candidates
+                ]
+                score, item = max(scored, key=lambda pair: (pair[0], str(pair[1]["url"])))
+                tied = sum(candidate_score == score for candidate_score, _ in scored)
+                assignment = (
+                    "exact_unique_asset"
+                    if len(candidates) == 1
+                    else (
+                        "title_resolved"
+                        if score > 0 and tied == 1
+                        else "ambiguous_shared_asset"
+                    )
+                )
                 author_node = soup.find(attrs={"rel": "author"})
                 matches.append(
                     {
                         "asset_key": key,
+                        "source_candidate_count": len(candidates),
+                        "source_candidate_urls": sorted(
+                            {str(candidate["url"]) for candidate in candidates}
+                        ),
+                        "source_assignment": assignment,
+                        "title_shared_term_count": score,
                         "source_title": item["title"],
                         "source_url": item["url"],
                         "source_published": item["published"],
                         "source_asset_url": item["assets"][key],
                         "page_url": final_url,
-                        "page_title": soup.title.get_text(" ", strip=True) if soup.title else "",
+                        "page_title": page_title,
                         "page_author": (
                             author_node.get_text(" ", strip=True) if author_node else ""
                         ),

@@ -66,6 +66,8 @@ def test_feed_media_correlation_matches_exact_asset_key(
         "https://source.example/feed", ["https://copy.example/story"]
     )
     assert result["matches"][0]["asset_key"] == "abcdef1234567890.jpg"
+    assert result["matches"][0]["source_candidate_count"] == 1
+    assert result["matches"][0]["source_assignment"] == "exact_unique_asset"
     assert result["matches"][0]["source_title"] == "Source report"
     assert result["matches"][0]["page_author"] == "Site Author"
     assert result["matches"][0]["source_link_preserved"] is False
@@ -92,6 +94,33 @@ def test_feed_media_ignores_related_story_thumbnail(
         "https://source.example/feed", ["https://copy.example/story"]
     )
     assert result["matches"] == []
+
+
+def test_feed_media_disambiguates_reused_asset_by_title(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    feed = b"""<rss><channel>
+    <item><title>Unrelated sports report</title><link>https://source.example/sports</link>
+    <description><![CDATA[<img src="https://cdn.example/shared1234567890.jpg">]]></description></item>
+    <item><title>Nuclear submarine drone defense</title><link>https://source.example/submarine</link>
+    <description><![CDATA[<img src="https://cdn.example/shared1234567890.jpg">]]></description></item>
+    </channel></rss>"""
+    page = b"""<html><title>Why nuclear submarine drone defense failed</title>
+    <meta property="og:image" content="https://cdn.example/shared1234567890.jpg"></html>"""
+
+    def fake_get(url: str, **_kwargs):
+        body = feed if "feed" in url else page
+        return url, 200, {"content-type": "application/xml"}, body
+
+    monkeypatch.setattr(publishing_pipeline, "validate_public_url", _fake_validate)
+    monkeypatch.setattr(publishing_pipeline, "public_get", fake_get)
+    result = publishing_pipeline.correlate_public_feed_media(
+        "https://source.example/feed", ["https://copy.example/story"]
+    )
+    match = result["matches"][0]
+    assert match["source_candidate_count"] == 2
+    assert match["source_assignment"] == "title_resolved"
+    assert match["source_url"] == "https://source.example/submarine"
 
 
 def test_feed_media_correlation_rejects_oversized_page_set() -> None:
