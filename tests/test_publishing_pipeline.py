@@ -50,8 +50,9 @@ def test_feed_media_correlation_matches_exact_asset_key(
     <link>https://source.example/report</link><pubDate>Tue, 13 Oct 2026 01:00:00 GMT</pubDate>
     <description><![CDATA[<img src="https://cdn.example/abcdef1234567890.jpg">]]></description>
     </item></channel></rss>"""
-    page = b"""<html><title>Rewritten report</title><body>
-    <img src="https://cdn.example/abcdef1234567890.jpg"><a rel="author">Site Author</a>
+    page = b"""<html><title>Rewritten report</title>
+    <meta property="og:image" content="https://cdn.example/abcdef1234567890.jpg"><body>
+    <a rel="author">Site Author</a>
     </body></html>"""
 
     def fake_get(url: str, **_kwargs):
@@ -68,6 +69,29 @@ def test_feed_media_correlation_matches_exact_asset_key(
     assert result["matches"][0]["source_title"] == "Source report"
     assert result["matches"][0]["page_author"] == "Site Author"
     assert result["matches"][0]["source_link_preserved"] is False
+
+
+def test_feed_media_ignores_related_story_thumbnail(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    feed = b"""<rss><channel><item><title>Source report</title>
+    <link>https://source.example/report</link>
+    <description><![CDATA[<img src="https://cdn.example/abcdef1234567890.jpg">]]></description>
+    </item></channel></rss>"""
+    page = b"""<html><title>Different report</title>
+    <meta property="og:image" content="https://cdn.example/different123456789.jpg">
+    <body><aside><img src="https://cdn.example/abcdef1234567890.jpg"></aside></body></html>"""
+
+    def fake_get(url: str, **_kwargs):
+        body = feed if "feed" in url else page
+        return url, 200, {"content-type": "application/xml"}, body
+
+    monkeypatch.setattr(publishing_pipeline, "validate_public_url", _fake_validate)
+    monkeypatch.setattr(publishing_pipeline, "public_get", fake_get)
+    result = publishing_pipeline.correlate_public_feed_media(
+        "https://source.example/feed", ["https://copy.example/story"]
+    )
+    assert result["matches"] == []
 
 
 def test_feed_media_correlation_rejects_oversized_page_set() -> None:

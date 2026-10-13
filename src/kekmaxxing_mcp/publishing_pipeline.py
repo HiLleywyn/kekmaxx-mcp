@@ -170,9 +170,19 @@ def correlate_public_feed_media(feed_url: str, page_urls: list[str]) -> dict[str
                 continue
             text = body.decode("utf-8", errors="replace")
             soup = BeautifulSoup(text, "html.parser")
+            primary_values = []
+            for node in soup.find_all("meta", content=True):
+                label = str(node.get("property") or node.get("name") or "").casefold()
+                if label in {
+                    "og:image",
+                    "og:image:url",
+                    "twitter:image",
+                    "twitter:image:src",
+                }:
+                    primary_values.append(str(node.get("content")))
             page_assets = {
                 key: value
-                for value in ASSET_URL_RE.findall(text)
+                for value in primary_values
                 if (key := _asset_key(value)) is not None
             }
             page_links = {
@@ -217,6 +227,9 @@ def correlate_public_feed_media(feed_url: str, page_urls: list[str]) -> dict[str
         "limitations": [
             "Only public GET requests were made; page JavaScript was not executed.",
             "The comparison is bounded to supplied pages and current feed items.",
-            "Shared stock images require title, timing, and text corroboration.",
+            (
+                "Only primary social-card media is compared; shared stock images still "
+                "require corroboration."
+            ),
         ],
     }
