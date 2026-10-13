@@ -59,6 +59,47 @@ def _title_terms(value: str) -> set[str]:
     }
 
 
+def _first_asset_url(value: str) -> str | None:
+    match = ASSET_URL_RE.search(value)
+    return match.group(0) if match and _asset_key(match.group(0)) else None
+
+
+def _primary_feed_asset_urls(node: ET.Element) -> list[str]:
+    """Return only item-level primary media, not related-story body assets."""
+    for child in node.iter():
+        local = child.tag.rsplit("}", 1)[-1].casefold()
+        if local == "enclosure":
+            value = child.attrib.get("url") or child.attrib.get("href")
+            if value and _asset_key(value):
+                return [value]
+        if local == "link" and child.attrib.get("rel", "").casefold() == "enclosure":
+            value = child.attrib.get("href")
+            if value and _asset_key(value):
+                return [value]
+
+    for child in node.iter():
+        local = child.tag.rsplit("}", 1)[-1].casefold()
+        namespace = child.tag.rsplit("}", 1)[0].lstrip("{").casefold()
+        if local in {"content", "thumbnail"} and "search.yahoo.com/mrss" in namespace:
+            value = child.attrib.get("url") or child.attrib.get("href")
+            if value and _asset_key(value):
+                return [value]
+
+    for preferred in ("description", "summary"):
+        for child in node.iter():
+            if child.tag.rsplit("}", 1)[-1].casefold() == preferred:
+                value = _first_asset_url(child.text or "")
+                if value:
+                    return [value]
+
+    for child in node.iter():
+        if child.tag.rsplit("}", 1)[-1].casefold() in {"content", "encoded"}:
+            value = _first_asset_url(child.text or "")
+            if value:
+                return [value]
+    return []
+
+
 def inspect_public_generator_health(
     site_urls: list[str],
     health_path: str = "/health.json",
@@ -130,24 +171,20 @@ def _feed_items(body: bytes, feed_url: str) -> list[dict[str, object]]:
     items: list[dict[str, object]] = []
     for node in candidates[:MAX_FEED_ITEMS]:
         values: dict[str, str] = {}
-        blobs: list[str] = []
         for child in node.iter():
             local = child.tag.rsplit("}", 1)[-1].casefold()
             text = child.text or ""
             if local in {"title", "guid", "pubdate", "published", "updated"} and text:
                 values.setdefault(local, text.strip())
             if local == "link":
-                href = child.attrib.get("href") or text
+                href = (
+                    child.attrib.get("href")
+                    if child.attrib.get("rel", "").casefold() != "enclosure"
+                    else None
+                ) or text
                 if href:
                     values.setdefault("link", href.strip())
-            blobs.extend(
-                value
-                for key in ("url", "href", "src")
-                if (value := child.attrib.get(key))
-            )
-            if text:
-                blobs.append(text)
-        urls = {match.group(0) for blob in blobs for match in ASSET_URL_RE.finditer(blob)}
+        urls = set(_primary_feed_asset_urls(node))
         assets = {key: asset for asset in urls if (key := _asset_key(asset)) is not None}
         if assets:
             items.append(

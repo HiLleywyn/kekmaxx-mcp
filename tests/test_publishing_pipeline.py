@@ -96,6 +96,30 @@ def test_feed_media_ignores_related_story_thumbnail(
     assert result["matches"] == []
 
 
+def test_feed_media_prefers_enclosure_over_related_content_asset(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    feed = b"""<rss xmlns:content="http://purl.org/rss/1.0/modules/content/"><channel><item>
+    <title>Primary report</title><link>https://source.example/primary</link>
+    <enclosure url="https://cdn.example/primary1234567890.jpg" type="image/jpeg" />
+    <description><![CDATA[<img src="https://cdn.example/primary1234567890.jpg">]]></description>
+    <content:encoded><![CDATA[<aside><img src="https://cdn.example/related1234567890.jpg"></aside>]]></content:encoded>
+    </item></channel></rss>"""
+    page = b"""<html><title>Related story</title>
+    <meta property="og:image" content="https://cdn.example/related1234567890.jpg"></html>"""
+
+    def fake_get(url: str, **_kwargs):
+        body = feed if "feed" in url else page
+        return url, 200, {"content-type": "application/xml"}, body
+
+    monkeypatch.setattr(publishing_pipeline, "validate_public_url", _fake_validate)
+    monkeypatch.setattr(publishing_pipeline, "public_get", fake_get)
+    result = publishing_pipeline.correlate_public_feed_media(
+        "https://source.example/feed", ["https://copy.example/story"]
+    )
+    assert result["matches"] == []
+
+
 def test_feed_media_disambiguates_reused_asset_by_title(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
