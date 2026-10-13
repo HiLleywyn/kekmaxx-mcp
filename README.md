@@ -128,6 +128,9 @@ Available MCP tools:
 - `compare_public_pages`
 - `public_ad_destination_decode`
 - `public_archived_ad_router`
+- `fingerprint_public_ad_router`
+- `compare_public_ad_router_fingerprints`
+- `fingerprint_public_advertiser_identity_churn`
 - `google_ads_find_advertisers`
 - `public_meta_ad_ledger`
 - `recover_public_ad_destination_urls`
@@ -178,6 +181,24 @@ These tools can preserve identifiers, nested destination configuration, Meta
 macros, router hashes, and cloaking signals even when a platform no longer shows
 the creative. They cannot recover server-side destinations that were never
 captured, bypass a login, or prove that a configured destination was delivered.
+
+Classify a copied public router payload locally, compare two to eight explicit
+archive captures, or detect exact advertiser-name reuse across distinct public
+platform IDs:
+
+```bash
+kekmaxxing-ad-fingerprint payload '<html>public archived router code</html>'
+kekmaxxing-ad-fingerprint compare \
+  'https://web.archive.org/web/20260101000000id_/https://example.org/click?key=a' \
+  'https://web.archive.org/web/20260201000000id_/https://example.org/click?key=b'
+kekmaxxing-ad-fingerprint churn public-advertiser-observations.json
+```
+
+The router score is a behavior classifier, not an attribution score. Russian
+language markers add zero points, shared `__bjs` code is treated as a software-
+family signal, and exact hashes identify artifacts rather than controllers.
+The churn detector reports brand reuse across public IDs without inferring the
+same person, payer, or business manager.
 
 ## Data CLIs
 

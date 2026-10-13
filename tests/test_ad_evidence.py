@@ -35,6 +35,7 @@ def test_decode_nested_meta_destination_and_fingerprint() -> None:
     assert any("newspace.example/click" in item for item in result["decoded_redirect_targets"])
     assert result["fingerprints"][0]["decoded"] is True
     assert "b.ua" in result["fingerprints"][0]["field_names"]
+    assert len(result["fingerprints"][0]["schema_sha256"]) == 64
     assert "private user agent" not in json.dumps(result)
 
 
@@ -46,6 +47,10 @@ def test_decode_redacts_credentials_and_rejects_private_literal() -> None:
     rendered = json.dumps(result)
     assert "secret" not in rendered
     assert "[redacted]" in rendered
+    token_result = ad_evidence.decode_public_ad_url(
+        "https://example.org/click?token_fb=publicly-exposed-credential&key=abc123"
+    )
+    assert "publicly-exposed-credential" not in json.dumps(token_result)
     with pytest.raises(ValueError, match="private"):
         ad_evidence.decode_public_ad_url("http://127.0.0.1/private")
 

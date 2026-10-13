@@ -5,6 +5,11 @@ from __future__ import annotations
 from mcp.server.fastmcp import FastMCP
 
 from .ad_evidence import decode_public_ad_url, inspect_archived_ad_router
+from .ad_pattern_fingerprint import (
+    compare_public_archived_ad_router_patterns,
+    fingerprint_public_ad_router_payload,
+    fingerprint_public_advertiser_churn,
+)
 from .browser import browse
 from .citation_audit import audit_public_telegram_citations
 from .fcc import build_download_url, get_file_details, search_entity_files
@@ -98,6 +103,41 @@ def public_archived_ad_router(url: str, max_bytes: int = 3_000_000) -> dict:
     Shared anti-analysis code is not an attribution signature by itself.
     """
     return inspect_archived_ad_router(url, max_bytes=max_bytes)
+
+
+@mcp.tool()
+def fingerprint_public_ad_router(value: str, known_sha256: list[str] | None = None) -> dict:
+    """Classify supplied public router HTML, JavaScript, or URL without opening it.
+
+    The score describes browser-fingerprinted ad-router behavior, never operator,
+    nationality, sponsorship, ownership, or intent. Russian-language strings add
+    no points, and known hashes identify artifacts rather than controllers.
+    """
+    return fingerprint_public_ad_router_payload(value, known_sha256=known_sha256)
+
+
+@mcp.tool()
+def compare_public_ad_router_fingerprints(
+    urls: list[str], max_bytes: int = 3_000_000
+) -> dict:
+    """Compare two to eight explicit public archive captures without running code.
+
+    Only the caller-supplied URLs are fetched. Similarity can identify an exact
+    artifact or software family but cannot establish common control.
+    """
+    return compare_public_archived_ad_router_patterns(urls, max_bytes=max_bytes)
+
+
+@mcp.tool()
+def fingerprint_public_advertiser_identity_churn(
+    records: list[dict[str, object]],
+) -> dict:
+    """Detect exact advertiser-brand reuse across distinct public platform IDs.
+
+    Input is strict and privacy-minimized. Name reuse is evidence of replacement
+    or parallel redundancy, not proof of a common human, payer, or business manager.
+    """
+    return fingerprint_public_advertiser_churn(records)
 
 
 @mcp.tool()

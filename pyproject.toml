@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "kekmaxxing-mcp"
-version = "0.2.2"
+version = "0.2.3"
 description = "Guarded MCP and CLI toolkit for reproducible public-source accountability research"
 readme = "README.md"
 license = { file = "LICENSE" }
@@ -60,6 +60,7 @@ kekmaxxing-snapshot-delta = "kekmaxxing_mcp.snapshot_delta:main"
 kekmaxxing-rdap = "kekmaxxing_mcp.rdap_public:main"
 kekmaxxing-tse-accounts = "kekmaxxing_mcp.tse_accounts:main"
 kekmaxxing-ad-evidence = "kekmaxxing_mcp.ad_evidence:main"
+kekmaxxing-ad-fingerprint = "kekmaxxing_mcp.ad_pattern_fingerprint:main"
 kekmaxxing-install-browser = "kekmaxxing_mcp.install_browser:main"
 kekmaxxing-investigate = "kekmaxxing_mcp.investigate:main"
 

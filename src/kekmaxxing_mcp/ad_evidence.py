@@ -49,6 +49,8 @@ SENSITIVE_QUERY_PARTS = {
     "refresh_token",
     "session",
     "sessionid",
+    "token",
+    "token_fb",
 }
 MAX_CANDIDATES = 100
 
@@ -76,6 +78,22 @@ RUSSIAN_DEBUG_MARKERS = {
     "Динамический iframe": "dynamic iframe",
     "Ошибка при сборе данных": "data collection error",
 }
+
+
+def normalized_router_structure_sha256(value: str) -> str:
+    """Hash router source after replacing campaign-specific keys and Meta values."""
+    normalized = re.sub(
+        r"((?:[?&]|\\u0026|&amp;)key=)[A-Za-z0-9_-]{6,128}",
+        r"\1<campaign-key>",
+        value,
+    )
+    normalized = re.sub(
+        r"((?:ad|adset|campaign)_(?:id|name)=)(?:%7B%7B.*?%7D%7D|\{\{.*?\}\})",
+        r"\1<meta-macro>",
+        normalized,
+        flags=re.IGNORECASE,
+    )
+    return hashlib.sha256(normalized.encode("utf-8")).hexdigest()
 
 
 def _decode_repeated(value: str, rounds: int = 3) -> str:
@@ -111,7 +129,8 @@ def _redact_url(value: str) -> str:
     for key, item in parse_qsl(parsed.query, keep_blank_values=True):
         lowered = key.lower()
         if lowered in SENSITIVE_QUERY_PARTS or any(
-            part in lowered for part in ("password", "secret", "credential", "access_token")
+            part in lowered
+            for part in ("password", "secret", "credential", "access_token", "token")
         ):
             item = "[redacted]"
         query.append((key, item))
@@ -141,9 +160,11 @@ def _decode_bjs(value: str) -> dict[str, object]:
             for key in values
         }
     )
+    schema_sha256 = hashlib.sha256("\n".join(fields).encode("utf-8")).hexdigest()
     return {
         "decoded": True,
         "sha256": hashlib.sha256(raw).hexdigest(),
+        "schema_sha256": schema_sha256,
         "field_names": fields,
         "automation_flags": {
             str(key): value
@@ -260,6 +281,7 @@ def inspect_archived_ad_router(url: str, max_bytes: int = 3_000_000) -> dict:
         "content_type": headers.get("content-type", ""),
         "bytes": len(body),
         "sha256": hashlib.sha256(body).hexdigest(),
+        "normalized_structure_sha256": normalized_router_structure_sha256(text),
         "title": soup.title.get_text(" ", strip=True) if soup.title else "",
         "base_href": _redact_url(base_href) if base_href else None,
         "campaign_keys": sorted(campaign_keys),
