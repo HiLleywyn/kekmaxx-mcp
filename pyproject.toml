@@ -59,6 +59,7 @@ kekmaxxing-site-manifest = "kekmaxxing_mcp.site_manifest:main"
 kekmaxxing-snapshot-delta = "kekmaxxing_mcp.snapshot_delta:main"
 kekmaxxing-rdap = "kekmaxxing_mcp.rdap_public:main"
 kekmaxxing-tse-accounts = "kekmaxxing_mcp.tse_accounts:main"
+kekmaxxing-ad-evidence = "kekmaxxing_mcp.ad_evidence:main"
 kekmaxxing-install-browser = "kekmaxxing_mcp.install_browser:main"
 kekmaxxing-investigate = "kekmaxxing_mcp.investigate:main"
 

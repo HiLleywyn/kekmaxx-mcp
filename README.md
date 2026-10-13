@@ -33,6 +33,10 @@ It combines:
   contact details from change excerpts; and
 - privacy-minimized RDAP snapshots that preserve registration dates,
   nameservers, registrar, and status while omitting registrant contacts; and
+- local decoding of nested public ad redirects, Meta campaign macros, and
+  privacy-minimized browser-fingerprint payloads without opening destinations; and
+- passive inspection of caller-selected archived ad routers for campaign keys,
+  anti-automation signals, lander labels, body hashes, and language markers; and
 - an optional dedicated-WSL/WireGuard layout that keeps research traffic
   separate from ordinary browsers and Docker workloads.
 
@@ -122,6 +126,8 @@ Available MCP tools:
 - `resolve_dns`
 - `inspect_tls_certificate`
 - `compare_public_pages`
+- `public_ad_destination_decode`
+- `public_archived_ad_router`
 - `google_ads_find_advertisers`
 - `public_meta_ad_ledger`
 - `recover_public_ad_destination_urls`
@@ -150,6 +156,28 @@ Available MCP tools:
 - `public_rdap_snapshot`
 - `tse_candidate_account_search`
 - `tse_candidate_account_delta`
+
+Decode a copied public ad URL or redirect chain locally. This makes no network
+request, redacts credential-like query values, and does not return raw user-agent,
+screen, renderer, or referrer fingerprint values:
+
+```bash
+kekmaxxing-ad-evidence decode \
+  'https://l.facebook.com/l.php?u=https%3A%2F%2Fexample.org%2Fstory'
+```
+
+Inspect one explicit public archive capture without executing its JavaScript or
+requesting any discovered destination:
+
+```bash
+kekmaxxing-ad-evidence inspect \
+  'https://web.archive.org/web/20260101000000id_/https://example.org/click?key=example'
+```
+
+These tools can preserve identifiers, nested destination configuration, Meta
+macros, router hashes, and cloaking signals even when a platform no longer shows
+the creative. They cannot recover server-side destinations that were never
+captured, bypass a login, or prove that a configured destination was delivered.
 
 ## Data CLIs
 

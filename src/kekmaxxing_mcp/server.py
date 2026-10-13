@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from mcp.server.fastmcp import FastMCP
 
+from .ad_evidence import decode_public_ad_url, inspect_archived_ad_router
 from .browser import browse
 from .citation_audit import audit_public_telegram_citations
 from .fcc import build_download_url, get_file_details, search_entity_files
@@ -77,6 +78,26 @@ def inspect_tls_certificate(hostname: str, port: int = 443) -> dict:
 def compare_public_pages(left_url: str, right_url: str) -> dict:
     """Compare two public HTML pages using passive structural fingerprints."""
     return compare_pages(left_url, right_url)
+
+
+@mcp.tool()
+def public_ad_destination_decode(value: str, max_depth: int = 6) -> dict:
+    """Decode nested public ad/redirect URLs locally without opening any destination.
+
+    Credential-like query values and raw device fingerprint values are omitted.
+    A decoded target proves configuration, not delivery, ownership, or attribution.
+    """
+    return decode_public_ad_url(value, max_depth=max_depth)
+
+
+@mcp.tool()
+def public_archived_ad_router(url: str, max_bytes: int = 3_000_000) -> dict:
+    """Inspect one public archived ad router for macros, cloaking, and lander evidence.
+
+    JavaScript is never executed and discovered destinations are never requested.
+    Shared anti-analysis code is not an attribution signature by itself.
+    """
+    return inspect_archived_ad_router(url, max_bytes=max_bytes)
 
 
 @mcp.tool()
