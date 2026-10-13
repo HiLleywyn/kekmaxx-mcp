@@ -29,8 +29,9 @@ It combines:
   assets, structured metadata, and public endpoint references without executing
   code, submitting forms, or calling discovered endpoints; and
 - bounded content-factory comparison across explicitly supplied public sites,
-  including exact tracker and robots hashes, DOM-template families, sitemap
-  profiles, hosting addresses, image hosts, and exact public text-block reuse; and
+  including exact tracker and robots hashes, shared external-script identifiers,
+  DOM-template families, sitemap profiles, hosting addresses, image hosts, and
+  exact public text-block reuse; and
 - bounded archive/live snapshot comparison that separates raw HTML churn from
   visible-text changes, hashes each version, records link deltas, and redacts
   contact details from change excerpts; and
@@ -540,9 +541,11 @@ kekmaxxing-content-factory \
 ```
 
 The content-factory result distinguishes exact code and text matches from weaker
-hosting or hotlink overlap. Sitemap counts are public index entries, not unique
-articles or audience reach. Shared artifacts do not by themselves identify an
-operator, payer, nationality, sponsor, or intent.
+hosting or hotlink overlap. Shared external URLs are recorded without fetching
+or executing the third-party scripts, and query values are omitted. Sitemap
+counts are public index entries, not unique articles or audience reach. Shared
+artifacts do not by themselves identify an operator, payer, nationality, sponsor,
+or intent.
 
 A repeated Gravatar hash supports reuse of one account identity; it does not
 identify a person or prove common legal ownership. Search counts can overlap

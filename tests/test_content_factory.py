@@ -11,8 +11,10 @@ def test_content_factory_groups_exact_public_artifacts(monkeypatch: pytest.Monke
     tracking = b"localStorage.getItem('agc_optout'); sessionStorage.getItem('agc_session');"
     roots = {
         "alpha.example": b'<html><head><title>Alpha</title><script src="/tracking.js"></script>'
+        b'<script src="https://ads.example/22/shared?cache=1"></script>'
         b'</head><body><main class="feed"><img src="https://images.example/a.jpg"></main></body></html>',
         "beta.example": b'<html><head><title>Beta</title><script src="/tracking.js"></script>'
+        b'<script src="https://ads.example/22/shared?cache=2"></script>'
         b'</head><body><main class="feed"><img src="https://images.example/b.jpg"></main></body></html>',
     }
     article = (
@@ -60,6 +62,12 @@ def test_content_factory_groups_exact_public_artifacts(monkeypatch: pytest.Monke
         "https://beta.example",
     ]
     assert result["repeated_tracking_scripts"][0]["tracking_sha256"]
+    assert result["repeated_external_scripts"] == [
+        {
+            "external_script_url": "https://ads.example/22/shared",
+            "sites": ["https://alpha.example", "https://beta.example"],
+        }
+    ]
     assert result["repeated_robots_templates"][0]["sites"] == [
         "https://alpha.example",
         "https://beta.example",

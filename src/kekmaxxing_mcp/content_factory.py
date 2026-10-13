@@ -136,12 +136,16 @@ def _inspect_site(site_url: str) -> dict[str, object]:
     origin_host = (urlparse(origin).hostname or "").lower()
 
     script_urls: list[str] = []
+    external_script_urls: list[str] = []
     for node in soup.find_all("script", src=True):
         absolute = urljoin(final_url, str(node.get("src")))
-        if (urlparse(absolute).hostname or "").lower() == origin_host:
-            cleaned = _display_url(absolute)
+        script_host = (urlparse(absolute).hostname or "").lower()
+        cleaned = _display_url(absolute)
+        if script_host == origin_host:
             if cleaned not in script_urls:
                 script_urls.append(cleaned)
+        elif "." in script_host and cleaned not in external_script_urls:
+            external_script_urls.append(cleaned)
     tracking_url = f"{origin}/tracking.js"
     if tracking_url not in script_urls:
         script_urls.insert(0, tracking_url)
@@ -201,6 +205,7 @@ def _inspect_site(site_url: str) -> dict[str, object]:
         "image_hosts": _absolute_hosts(soup, final_url, "img", "src")[:100],
         "stylesheets": stylesheets[:100],
         "same_origin_scripts": scripts,
+        "external_script_urls": external_script_urls[:100],
         "robots": robots_result,
         "sitemap": sitemap_result,
     }
@@ -269,6 +274,7 @@ def fingerprint_public_content_network(
     groups: dict[str, defaultdict[str, set[str]]] = {
         "address": defaultdict(set),
         "tracking_sha256": defaultdict(set),
+        "external_script_url": defaultdict(set),
         "robots_sha256": defaultdict(set),
         "dom_template_sha256": defaultdict(set),
         "sitemap_profile": defaultdict(set),
@@ -291,6 +297,8 @@ def fingerprint_public_content_network(
         for script in site["same_origin_scripts"]:
             if script.get("markers"):
                 groups["tracking_sha256"][str(script["sha256"])].add(origin)
+        for script_url in site["external_script_urls"]:
+            groups["external_script_url"][str(script_url)].add(origin)
         for host in site["image_hosts"]:
             groups["image_host"][str(host)].add(origin)
     for sample in samples:
@@ -320,6 +328,9 @@ def fingerprint_public_content_network(
         "repeated_tracking_scripts": repeated(
             groups["tracking_sha256"], "tracking_sha256"
         ),
+        "repeated_external_scripts": repeated(
+            groups["external_script_url"], "external_script_url"
+        ),
         "repeated_robots_templates": repeated(groups["robots_sha256"], "robots_sha256"),
         "repeated_sitemap_profiles": repeated(
             groups["sitemap_profile"], "sitemap_profile"
@@ -336,6 +347,10 @@ def fingerprint_public_content_network(
             ),
             "same_address": (
                 "A hosting relationship only; shared and reseller hosting are common."
+            ),
+            "external_script_reuse": (
+                "A shared public service or account-key lead; it can reflect ordinary "
+                "third-party software and does not by itself establish common control."
             ),
             "template_or_robots_reuse": (
                 "A common publishing kit or deployment process; control remains unresolved."
