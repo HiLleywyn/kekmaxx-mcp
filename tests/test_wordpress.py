@@ -98,6 +98,50 @@ def test_public_post_search_counts_caps_request_matrix() -> None:
         )
 
 
+def test_public_recent_post_source_map_extracts_declared_sources(monkeypatch) -> None:
+    monkeypatch.setattr(wordpress, "validate_public_url", _public_target)
+    payload = [
+        {
+            "id": 7,
+            "date": "2026-10-12T10:25:56",
+            "modified": "2026-10-12T10:25:56",
+            "author": 1,
+            "link": "https://example.org/story/",
+            "title": {"rendered": "A &amp; B"},
+            "content": {
+                "rendered": (
+                    '<p>Visible story.</p><a href="https://source.example/item?id=7&token=x">'
+                    "Источник</a><a href=\"/about\">About</a>"
+                )
+            },
+        }
+    ]
+
+    def fake_get(url: str, **_kwargs):
+        return url, 200, {"x-wp-total": "1"}, json.dumps(payload).encode()
+
+    monkeypatch.setattr(wordpress, "public_get", fake_get)
+    result = wordpress.public_recent_post_source_map(["https://example.org"], per_site=1)
+    row = result["posts"][0]
+    assert row["title"] == "A & B"
+    assert row["declared_source_links"] == [
+        {"url": "https://source.example/item", "host": "source.example", "label": "Источник"}
+    ]
+    assert result["source_host_summary"] == [
+        {
+            "site": "https://example.org",
+            "source_hosts": [{"host": "source.example", "linked_posts": 1}],
+        }
+    ]
+
+
+def test_public_recent_post_source_map_caps_posts() -> None:
+    with pytest.raises(ValueError, match="per_site"):
+        wordpress.public_recent_post_source_map(["https://example.org"], per_site=101)
+    with pytest.raises(ValueError, match="page"):
+        wordpress.public_recent_post_source_map(["https://example.org"], page=11)
+
+
 def test_map_public_site_identities_groups_exact_signals(monkeypatch) -> None:
     fingerprint = "b" * 64
     pages = {
@@ -198,6 +242,37 @@ def test_map_public_site_identities_preserves_network_failure(monkeypatch) -> No
     )
     assert [site["site"] for site in result["sites"]] == ["https://live.example"]
     assert result["failures"] == [{"site": "https://slow.example", "error": "timed out"}]
+
+
+def test_map_public_site_identities_does_not_group_empty_non_wordpress_stacks(
+    monkeypatch,
+) -> None:
+    def fake_validate(url: str):
+        parsed = wordpress.urlparse(url)
+
+        class Target:
+            pass
+
+        target = Target()
+        target.url = url
+        target.hostname = parsed.hostname
+        target.port = 443
+        return target
+
+    def fake_get(url: str, **_kwargs):
+        parsed = wordpress.urlparse(url)
+        if parsed.path.startswith("/wp-json/"):
+            return url, 404, {"content-type": "text/html"}, b"not wordpress"
+        return url, 200, {"content-type": "text/html"}, b"<title>Plain site</title>"
+
+    monkeypatch.setattr(wordpress, "validate_public_url", fake_validate)
+    monkeypatch.setattr(wordpress, "public_get", fake_get)
+    result = wordpress.map_public_site_identities(
+        ["https://alpha.example", "https://beta.example"]
+    )
+
+    assert all(site["wordpress"]["stack_sha256"] is None for site in result["sites"])
+    assert result["repeated_wordpress_stacks"] == []
 
 
 def test_map_public_checkout_identities_reads_gateway_markers(monkeypatch) -> None:

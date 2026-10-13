@@ -28,6 +28,9 @@ It combines:
 - bounded public-site manifests that hash same-origin scripts and record forms,
   assets, structured metadata, and public endpoint references without executing
   code, submitting forms, or calling discovered endpoints; and
+- bounded content-factory comparison across explicitly supplied public sites,
+  including exact tracker and robots hashes, DOM-template families, sitemap
+  profiles, hosting addresses, image hosts, and exact public text-block reuse; and
 - bounded archive/live snapshot comparison that separates raw HTML churn from
   visible-text changes, hashes each version, records link deltas, and redacts
   contact details from change excerpts; and
@@ -149,12 +152,14 @@ Available MCP tools:
 - `public_site_identity_map`
 - `public_checkout_identity_map`
 - `wordpress_public_post_counts`
+- `wordpress_public_recent_sources`
 - `public_post_event_timeline`
 - `public_x_status`
 - `public_telegram_citation_audit`
 - `public_telegram_history_probe`
 - `public_pdf_provenance`
 - `public_site_manifest`
+- `public_content_factory_fingerprint`
 - `public_snapshot_delta`
 - `public_rdap_snapshot`
 - `tse_candidate_account_search`
@@ -510,6 +515,34 @@ kekmaxxing-wordpress post-counts \
   --year 2026 \
   --output output/public-post-counts.json
 ```
+
+Map declared source links in recent public WordPress posts and report exact
+cross-site title or body reuse:
+
+```bash
+kekmaxxing-wordpress recent-sources \
+  --site https://example-one.invalid \
+  --site https://example-two.invalid \
+  --per-site 25 \
+  --output output/public-recent-sources.json
+```
+
+Compare a caller-selected set of public publishing sites and optional article
+samples for exact deployment and content-reuse signals:
+
+```bash
+kekmaxxing-content-factory \
+  --site https://example-one.invalid \
+  --site https://example-two.invalid \
+  --sample https://example-one.invalid/public-article \
+  --sample https://example-two.invalid/public-article \
+  --output output/content-factory-fingerprint.json
+```
+
+The content-factory result distinguishes exact code and text matches from weaker
+hosting or hotlink overlap. Sitemap counts are public index entries, not unique
+articles or audience reach. Shared artifacts do not by themselves identify an
+operator, payer, nationality, sponsor, or intent.
 
 A repeated Gravatar hash supports reuse of one account identity; it does not
 identify a person or prove common legal ownership. Search counts can overlap

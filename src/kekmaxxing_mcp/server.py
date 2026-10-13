@@ -12,6 +12,7 @@ from .ad_pattern_fingerprint import (
 )
 from .browser import browse
 from .citation_audit import audit_public_telegram_citations
+from .content_factory import fingerprint_public_content_network
 from .fcc import build_download_url, get_file_details, search_entity_files
 from .fec import (
     load_openfec_schedule_e,
@@ -41,6 +42,7 @@ from .wordpress import (
     map_public_site_identities,
     map_public_user_fingerprints,
     public_post_search_counts,
+    public_recent_post_source_map,
 )
 from .x_public import resolve_public_x_status
 
@@ -290,6 +292,18 @@ def wordpress_public_post_counts(site_urls: list[str], terms: list[str], year: i
 
 
 @mcp.tool()
+def wordpress_public_recent_sources(
+    site_urls: list[str], per_site: int = 25, page: int = 1
+) -> dict:
+    """Map declared source links and exact reuse in recent public WordPress posts.
+
+    The collection is bounded, GET-only, strips outbound query values, and does
+    not treat copying or linking as evidence of falsity, reach, or common control.
+    """
+    return public_recent_post_source_map(site_urls, per_site, page)
+
+
+@mcp.tool()
 def public_post_event_timeline(
     csv_files: list[str], baseline_start: str, event_start: str, event_end: str
 ) -> dict:
@@ -369,6 +383,18 @@ def public_site_manifest(
         max_same_origin_scripts=max_same_origin_scripts,
         max_script_bytes=max_script_bytes,
     )
+
+
+@mcp.tool()
+def public_content_factory_fingerprint(
+    site_urls: list[str], sample_urls: list[str] | None = None
+) -> dict:
+    """Compare public publishing templates, trackers, hosting, and exact text reuse.
+
+    Exact artifacts establish technical reuse, not operator identity, nationality,
+    political sponsorship, or intent. Collection is bounded and GET-only.
+    """
+    return fingerprint_public_content_network(site_urls, sample_urls)
 
 
 @mcp.tool()

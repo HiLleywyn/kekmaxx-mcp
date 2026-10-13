@@ -9,7 +9,7 @@ import re
 from collections import defaultdict
 from datetime import UTC, datetime
 from pathlib import Path
-from urllib.parse import urlencode, urlparse
+from urllib.parse import urlencode, urljoin, urlparse, urlunparse
 
 import httpx
 from bs4 import BeautifulSoup
@@ -19,6 +19,7 @@ from .safety import public_get, validate_public_url
 MAX_SITES = 50
 MAX_TERMS = 25
 MAX_REQUESTS = 250
+MAX_RECENT_POSTS = 100
 AVATAR_HASH_RE = re.compile(r"/avatar/([0-9a-f]{32}|[0-9a-f]{64})(?:[?./]|$)", re.IGNORECASE)
 GA4_RE = re.compile(r"\bG-[A-Z0-9]{8,}\b", re.IGNORECASE)
 GTM_RE = re.compile(r"\bGTM-[A-Z0-9]+\b", re.IGNORECASE)
@@ -183,10 +184,14 @@ def load_public_site_identity(site_url: str) -> dict:
 
     themes = sorted({match.lower() for match in WP_THEME_RE.findall(text)})
     plugins = sorted({match.lower() for match in WP_PLUGIN_RE.findall(text)})
-    stack_material = json.dumps(
-        {"generator": generator, "themes": themes, "plugins": plugins},
-        sort_keys=True,
-        separators=(",", ":"),
+    stack_markers = {"generator": generator, "themes": themes, "plugins": plugins}
+    stack_material = json.dumps(stack_markers, sort_keys=True, separators=(",", ":"))
+    # An empty marker set is not a WordPress stack. Hashing it made every non-WordPress
+    # site look exactly related and produced a misleading cross-site cluster.
+    stack_sha256 = (
+        hashlib.sha256(stack_material.encode()).hexdigest()
+        if generator or themes or plugins
+        else None
     )
     return {
         "site": origin,
@@ -204,7 +209,7 @@ def load_public_site_identity(site_url: str) -> dict:
             "generator": generator,
             "themes": themes,
             "plugins": plugins,
-            "stack_sha256": hashlib.sha256(stack_material.encode()).hexdigest(),
+            "stack_sha256": stack_sha256,
             "public_users": users,
             "public_users_error": users_error,
         },
@@ -239,7 +244,9 @@ def map_public_site_identities(site_urls: list[str]) -> dict:
         for user in site["wordpress"]["public_users"]:
             if user.get("avatar_hash"):
                 avatars[user["avatar_hash"]].add(origin)
-        stacks[site["wordpress"]["stack_sha256"]].add(origin)
+        stack_sha256 = site["wordpress"]["stack_sha256"]
+        if stack_sha256:
+            stacks[stack_sha256].add(origin)
         for host in site["linked_hosts"]:
             linked_hosts[host].add(origin)
 
@@ -378,6 +385,154 @@ def public_post_search_counts(site_urls: list[str], terms: list[str], year: int)
     }
 
 
+def _rendered(value: object) -> str:
+    if not isinstance(value, dict):
+        return ""
+    rendered = value.get("rendered")
+    return str(rendered) if rendered is not None else ""
+
+
+def _normalized_visible_text(markup: str) -> str:
+    return " ".join(BeautifulSoup(markup, "html.parser").get_text(" ", strip=True).split())
+
+
+def _public_article_links(markup: str, origin: str) -> list[dict[str, str]]:
+    origin_host = (urlparse(origin).hostname or "").lower()
+    links: dict[str, str] = {}
+    for anchor in BeautifulSoup(markup, "html.parser").find_all("a", href=True):
+        absolute = urljoin(origin + "/", str(anchor.get("href")).strip())
+        parsed = urlparse(absolute)
+        hostname = (parsed.hostname or "").lower()
+        if parsed.scheme not in {"http", "https"} or "." not in hostname:
+            continue
+        if hostname == origin_host or hostname.endswith("." + origin_host):
+            continue
+        # Drop query and fragment values. They commonly contain tracking or access tokens and
+        # are not needed to establish the public publisher/source relationship.
+        canonical = urlunparse((parsed.scheme, parsed.netloc, parsed.path or "/", "", "", ""))
+        label = " ".join(anchor.get_text(" ", strip=True).split())
+        links.setdefault(canonical, label[:160])
+    return [
+        {"url": url, "host": (urlparse(url).hostname or "").lower(), "label": label}
+        for url, label in sorted(links.items())[:50]
+    ]
+
+
+def public_recent_post_source_map(
+    site_urls: list[str], per_site: int = 25, page: int = 1
+) -> dict:
+    """Map source links and exact text reuse in bounded recent public WordPress posts."""
+    if not site_urls or len(site_urls) > MAX_SITES:
+        raise ValueError(f"site_urls must contain between 1 and {MAX_SITES} public sites")
+    if per_site < 1 or per_site > MAX_RECENT_POSTS:
+        raise ValueError(f"per_site must be between 1 and {MAX_RECENT_POSTS}")
+    if page < 1 or page > 10:
+        raise ValueError("page must be between 1 and 10")
+
+    rows: list[dict[str, object]] = []
+    failures: list[dict[str, str]] = []
+    source_hosts: defaultdict[str, defaultdict[str, int]] = defaultdict(
+        lambda: defaultdict(int)
+    )
+    title_groups: defaultdict[str, list[dict[str, str]]] = defaultdict(list)
+    body_groups: defaultdict[str, list[dict[str, str]]] = defaultdict(list)
+    for site_url in site_urls:
+        try:
+            origin = _origin(site_url)
+            query = urlencode(
+                {
+                    "per_page": per_site,
+                    "page": page,
+                    "orderby": "date",
+                    "order": "desc",
+                    "_fields": "id,date,modified,slug,link,title,content,excerpt,author",
+                }
+            )
+            endpoint = f"{origin}/wp-json/wp/v2/posts?{query}"
+            headers, payload = _json_get(endpoint, max_bytes=20_000_000)
+            if not isinstance(payload, list):
+                raise RuntimeError("WordPress posts endpoint returned an unexpected response")
+            for item in payload:
+                if not isinstance(item, dict):
+                    continue
+                title = _normalized_visible_text(_rendered(item.get("title")))
+                body_markup = _rendered(item.get("content"))
+                visible_text = _normalized_visible_text(body_markup)
+                links = _public_article_links(body_markup, origin)
+                source_links = [
+                    link
+                    for link in links
+                    if link["label"].strip().casefold()
+                    in {"source", "источник", "sursă", "sursa", "quelle", "джерело"}
+                ]
+                title_hash = hashlib.sha256(title.casefold().encode()).hexdigest()
+                body_hash = hashlib.sha256(visible_text.encode()).hexdigest()
+                row = {
+                    "site": origin,
+                    "id": item.get("id"),
+                    "date": str(item.get("date") or ""),
+                    "modified": str(item.get("modified") or ""),
+                    "author": item.get("author"),
+                    "title": title,
+                    "link": str(item.get("link") or ""),
+                    "title_sha256": title_hash,
+                    "body_sha256": body_hash,
+                    "visible_text_chars": len(visible_text),
+                    "external_links": links,
+                    "declared_source_links": source_links,
+                }
+                rows.append(row)
+                reference = {"site": origin, "link": row["link"], "title": title}
+                title_groups[title_hash].append(reference)
+                body_groups[body_hash].append(reference)
+                for link in links:
+                    source_hosts[origin][link["host"]] += 1
+        except (RuntimeError, ValueError, httpx.HTTPError) as exc:
+            failures.append({"site": site_url, "error": str(exc)})
+
+    def reused(
+        groups: dict[str, list[dict[str, str]]], hash_key: str, *, cross_site: bool
+    ) -> list[dict]:
+        results = []
+        for digest, references in groups.items():
+            if len(references) < 2:
+                continue
+            if cross_site and len({item["site"] for item in references}) < 2:
+                continue
+            results.append({hash_key: digest, "posts": references})
+        return sorted(results, key=lambda item: (-len(item["posts"]), item[hash_key]))
+
+    host_summary = [
+        {
+            "site": site,
+            "source_hosts": [
+                {"host": host, "linked_posts": count}
+                for host, count in sorted(counts.items(), key=lambda pair: (-pair[1], pair[0]))
+            ],
+        }
+        for site, counts in sorted(source_hosts.items())
+    ]
+    return {
+        "observed_at": datetime.now(UTC).isoformat(),
+        "per_site": per_site,
+        "page": page,
+        "posts": rows,
+        "failures": failures,
+        "source_host_summary": host_summary,
+        "exact_title_reuse": reused(title_groups, "title_sha256", cross_site=False),
+        "exact_body_reuse": reused(body_groups, "body_sha256", cross_site=False),
+        "cross_site_exact_title_reuse": reused(
+            title_groups, "title_sha256", cross_site=True
+        ),
+        "cross_site_exact_body_reuse": reused(body_groups, "body_sha256", cross_site=True),
+        "caveat": (
+            "Declared source links and exact hashes document public reuse, not permission, "
+            "editorial control, falsity, delivery, or audience reach. Query strings and fragments "
+            "are removed from outbound links to avoid retaining tracking or access tokens."
+        ),
+    }
+
+
 def _write_or_print(payload: dict, output: Path | None) -> None:
     rendered = json.dumps(payload, indent=2, ensure_ascii=False) + "\n"
     if output is None:
@@ -409,6 +564,13 @@ def main() -> int:
     counts.add_argument("--term", action="append", required=True)
     counts.add_argument("--year", type=int, required=True)
     counts.add_argument("--output", type=Path)
+    recent = sub.add_parser(
+        "recent-sources", help="map source links in bounded recent public WordPress posts"
+    )
+    recent.add_argument("--site", action="append", required=True)
+    recent.add_argument("--per-site", type=int, default=25)
+    recent.add_argument("--page", type=int, default=1)
+    recent.add_argument("--output", type=Path)
     args = parser.parse_args()
     if args.command == "map-users":
         result = map_public_user_fingerprints(args.site)
@@ -416,8 +578,10 @@ def main() -> int:
         result = map_public_site_identities(args.site)
     elif args.command == "map-checkouts":
         result = map_public_checkout_identities(args.site)
-    else:
+    elif args.command == "post-counts":
         result = public_post_search_counts(args.site, args.term, args.year)
+    else:
+        result = public_recent_post_source_map(args.site, args.per_site, args.page)
     _write_or_print(result, args.output)
     return 0
 
