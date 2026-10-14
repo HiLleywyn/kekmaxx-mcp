@@ -4,7 +4,7 @@ from urllib.parse import urlparse
 
 import pytest
 
-from kekmaxxing_mcp import halo_fingerprint
+from kekmaxxing_mcp import halo_fingerprint, netlas_halo
 
 
 def test_classifier_separates_halo_cms_from_custom_engine() -> None:
@@ -63,3 +63,81 @@ def test_public_classifier_retains_only_allowlisted_health_fields(
         "generator": "halo-engine",
         "version": "1.0",
     }
+
+
+def test_netlas_export_analysis_separates_bundle_from_header_only() -> None:
+    result = netlas_halo.analyze_netlas_halo_records(
+        [
+            {
+                "data": {
+                    "host": "news.example",
+                    "ip": "203.0.113.10",
+                    "port": 443,
+                    "protocol": "https",
+                    "@timestamp": "2026-09-12T17:12:43Z",
+                    "http": {
+                        "status_code": 200,
+                        "unknown_headers": [{"key": "x_halo_cache", "value": ["HIT"]}],
+                        "body_sha256": "a" * 64,
+                        "body": (
+                            '<article class="halo-card"></article>'
+                            '<script src="/tracking.js" data-domain="news.example"></script>'
+                            '<script src="https://grop.net/22/example"></script>'
+                        ),
+                    },
+                }
+            },
+            {
+                "data": {
+                    "host": "blog.example",
+                    "ip": "203.0.113.11",
+                    "port": 80,
+                    "http": {
+                        "status_code": 200,
+                        "unknown_headers": [{"key": "x_halo_cache", "value": ["STALE"]}],
+                        "body": "ordinary personal blog",
+                    },
+                }
+            },
+            {
+                "data": {
+                    "host": "cms.example",
+                    "ip": "203.0.113.12",
+                    "port": 443,
+                    "http": {
+                        "status_code": 200,
+                        "unknown_headers": [
+                            {"key": "x_halo_cache_at", "value": ["2026-10-13"]}
+                        ],
+                        "body": '<link href="/themes/example/assets/app.css">',
+                    },
+                }
+            },
+        ]
+    )
+
+    assert result["record_count"] == 3
+    assert result["classification_counts"] == {
+        "custom_halo_engine_snapshot": 1,
+        "header_name_only_control": 1,
+        "open_source_halo_cms_snapshot": 1,
+    }
+    assert all("body" not in record for record in result["records"])
+
+
+def test_netlas_export_analysis_classifies_unconfigured_snapshot() -> None:
+    result = netlas_halo.analyze_netlas_halo_records(
+        [
+            {
+                "data": {
+                    "host": "origin.example",
+                    "http": {
+                        "status_code": 503,
+                        "unknown_headers": [{"key": "x_halo_cache", "value": ["MISS"]}],
+                        "body": "Domain is not configured",
+                    },
+                }
+            }
+        ]
+    )
+    assert result["records"][0]["classification"] == "unconfigured_halo_header_snapshot"

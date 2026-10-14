@@ -24,6 +24,7 @@ from .fec import (
 from .google_ads import find_advertisers
 from .halo_fingerprint import classify_public_halo_sites
 from .meta_ads_public import normalize_public_meta_ad_ledger
+from .netlas_halo import analyze_netlas_halo_records
 from .passive import compare_pages, page_fingerprint, resolve_records, tls_certificate
 from .pdf_public import inspect_public_pdf
 from .procurement import load_fpds_award_history, load_usaspending_award
@@ -436,6 +437,19 @@ def public_halo_signature_classifier(site_urls: list[str]) -> dict:
     operator, nationality, sponsorship, or intent attribution.
     """
     return classify_public_halo_sites(site_urls)
+
+
+@mcp.tool()
+def public_netlas_halo_export_analysis(records: list[dict[str, object]]) -> dict:
+    """Classify caller-exported Netlas Halo-header records entirely offline.
+
+    The tool separates the open-source Halo CMS, the custom halo-engine bundle,
+    unconfigured snapshots, and header-name-only controls. It returns technical
+    markers and hashes rather than full response bodies or personal data. A
+    bundle match is not operator, ownership, nationality, authorization, or
+    intent attribution, and historical scans still require live validation.
+    """
+    return analyze_netlas_halo_records(records)
 
 
 @mcp.tool()

@@ -166,6 +166,7 @@ Available MCP tools:
 - `public_site_manifest`
 - `public_content_factory_fingerprint`
 - `public_halo_signature_classifier`
+- `public_netlas_halo_export_analysis`
 - `public_generator_health`
 - `public_feed_media_correlation`
 - `public_snapshot_delta`
@@ -194,6 +195,14 @@ These tools can preserve identifiers, nested destination configuration, Meta
 macros, router hashes, and cloaking signals even when a platform no longer shows
 the creative. They cannot recover server-side destinations that were never
 captured, bypass a login, or prove that a configured destination was delivered.
+
+Classify a caller-exported Netlas response set offline when a custom Halo-named
+header is used as a discovery pivot. The analyzer separates the open-source
+Halo CMS, the custom `halo-engine` bundle, unconfigured/default responses, and
+header-name-only controls. It returns hashes and bounded technical markers, not
+the bulky response bodies or contact/geo data. A bundle match is evidence of
+software/configuration reuse, not ownership, sponsorship, nationality,
+authorization, or intent; scan snapshots still require live validation.
 
 Classify a copied public router payload locally, compare two to eight explicit
 archive captures, or detect exact advertiser-name reuse across distinct public

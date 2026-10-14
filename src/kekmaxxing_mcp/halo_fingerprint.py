@@ -58,6 +58,9 @@ def classify_halo_artifact(
         ("ghost-net", "ghost_net_link_marker"),
         ("/tracking.js", "first_party_tracking_script"),
         ("grop.store", "grop_loader_marker"),
+        ("grop.net/", "grop_delivery_marker"),
+        ("medievalkin.com/", "ad_delivery_loader_marker"),
+        ("halo-card", "halo_card_markup"),
     ):
         if marker in lowered_html:
             engine_signals.append(label)
