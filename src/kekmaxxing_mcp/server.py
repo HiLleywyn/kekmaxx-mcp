@@ -54,6 +54,7 @@ from .wordpress import (
     public_recent_post_source_map,
 )
 from .x_public import resolve_public_x_status
+from .xor_config import analyze_repeating_xor_records
 
 mcp = FastMCP(
     "kekmaxxing",
@@ -64,6 +65,28 @@ mcp = FastMCP(
         "networks, or identify private individuals."
     ),
 )
+
+
+@mcp.tool()
+def decode_public_repeating_xor_config(
+    records: list[dict[str, object]],
+    crib_ciphertext_b64: str | None = None,
+    crib_plaintext: str | None = None,
+    key_hex: str | None = None,
+) -> dict:
+    """Reproduce Base64/repeating-XOR decoding of supplied public artifacts offline.
+
+    The caller must provide an explicit known-plaintext pair or a preserved hex
+    key. The tool performs no password search, network request, decoded-URL visit,
+    or content execution. URL-shaped output is configuration evidence, not
+    attribution or delivery proof.
+    """
+    return analyze_repeating_xor_records(
+        records,
+        crib_ciphertext_b64=crib_ciphertext_b64,
+        crib_plaintext=crib_plaintext,
+        key_hex=key_hex,
+    )
 
 
 @mcp.tool()

@@ -27,6 +27,8 @@ It combines:
   content hashes, and explicit interpretation limits; and
 - bounded extraction of official CERT-UA article text, lexical indicators, and
   inline-image hashes, with an optional CLI-only evidence-image export; and
+- offline, known-plaintext reproduction of Base64/repeating-XOR public
+  configuration timelines without visiting or executing decoded content; and
 - bounded public-site manifests that hash same-origin scripts and record forms,
   assets, structured metadata, and public endpoint references without executing
   code, submitting forms, or calling discovered endpoints; and
@@ -166,6 +168,7 @@ Available MCP tools:
 - `public_telegram_history_probe`
 - `public_pdf_provenance`
 - `public_certua_article_evidence`
+- `decode_public_repeating_xor_config`
 - `public_site_manifest`
 - `public_content_factory_fingerprint`
 - `public_halo_signature_classifier`
@@ -226,6 +229,30 @@ The churn detector reports brand reuse across public IDs without inferring the
 same person, payer, or business manager.
 
 ## Data CLIs
+
+Reproduce a repeating-XOR public configuration timeline from an explicit
+known-plaintext pair. The input is a JSON array (or a `records` object) whose
+entries contain `ciphertext_b64`; other fields such as timestamp and transaction
+ID are retained. The decoder makes no network request and never opens its output:
+
+```bash
+kekmaxxing-xor-config public-config-timeline.json \
+  --crib-ciphertext-b64 'BASE64_VALUE_FROM_A_PUBLIC_RECORD' \
+  --crib-plaintext 'https://documented.example/poll' \
+  --output output/decoded-config.json
+```
+
+If the documented plaintext is shorter than the repeating key, it recovers only
+that many key bytes. A separately preserved full key can instead be supplied as
+
+```bash
+kekmaxxing-xor-config public-config-timeline.json \
+  --key-hex 'PUBLICLY_DERIVED_HEX_KEY' \
+  --output output/decoded-config.json
+```
+
+Known plaintext makes the result reproducible, not attributable. A decoded URL
+still requires independent evidence for ownership, use, delivery, and activity.
 
 Normalize a manually preserved public Meta Ad Library ledger without giving the
 tool credentials, cookies, or a browser profile:

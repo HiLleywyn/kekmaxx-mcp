@@ -67,6 +67,7 @@ kekmaxxing-scan-archive = "kekmaxxing_mcp.public_scan_archives:main"
 kekmaxxing-scan-result = "kekmaxxing_mcp.public_scan_results:main"
 kekmaxxing-install-browser = "kekmaxxing_mcp.install_browser:main"
 kekmaxxing-investigate = "kekmaxxing_mcp.investigate:main"
+kekmaxxing-xor-config = "kekmaxxing_mcp.xor_config:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/kekmaxxing_mcp"]
