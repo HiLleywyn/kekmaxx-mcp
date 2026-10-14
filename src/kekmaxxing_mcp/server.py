@@ -22,6 +22,7 @@ from .fec import (
     summarize_rows,
 )
 from .google_ads import find_advertisers
+from .halo_fingerprint import classify_public_halo_sites
 from .meta_ads_public import normalize_public_meta_ad_ledger
 from .passive import compare_pages, page_fingerprint, resolve_records, tls_certificate
 from .pdf_public import inspect_public_pdf
@@ -423,6 +424,18 @@ def public_content_factory_fingerprint(
     political sponsorship, or intent. Collection is bounded and GET-only.
     """
     return fingerprint_public_content_network(site_urls, sample_urls)
+
+
+@mcp.tool()
+def public_halo_signature_classifier(site_urls: list[str]) -> dict:
+    """Distinguish Halo CMS sites from the separately observed custom halo-engine.
+
+    ``X-Halo-Cache-At`` and ``/themes/`` identify the open-source CMS family.
+    ``halo-engine`` health JSON, ``X-Halo-Cache``, first-party tracking, and
+    Ghost Mesh markers identify the custom publishing stack. Neither result is
+    operator, nationality, sponsorship, or intent attribution.
+    """
+    return classify_public_halo_sites(site_urls)
 
 
 @mcp.tool()

@@ -165,6 +165,7 @@ Available MCP tools:
 - `public_pdf_provenance`
 - `public_site_manifest`
 - `public_content_factory_fingerprint`
+- `public_halo_signature_classifier`
 - `public_generator_health`
 - `public_feed_media_correlation`
 - `public_snapshot_delta`
