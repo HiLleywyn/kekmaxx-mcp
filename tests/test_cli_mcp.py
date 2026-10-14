@@ -33,4 +33,5 @@ def test_cli_uses_mcp_contract_and_persists_typed_evidence(tmp_path, monkeypatch
         "public_snapshot_delta",
         "investigation_workflow_run",
         "decode_public_repeating_xor_config",
+        "fingerprint_public_inline_xor_loader",
     } <= names

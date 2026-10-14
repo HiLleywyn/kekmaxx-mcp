@@ -29,6 +29,9 @@ It combines:
   inline-image hashes, with an optional CLI-only evidence-image export; and
 - offline, known-plaintext reproduction of Base64/repeating-XOR public
   configuration timelines without visiting or executing decoded content; and
+- offline fingerprinting of numeric-XOR/Base64 inline loaders, including
+  normalized code hashes and bounded contract, selector, subid, and URL markers;
+  and
 - bounded public-site manifests that hash same-origin scripts and record forms,
   assets, structured metadata, and public endpoint references without executing
   code, submitting forms, or calling discovered endpoints; and
@@ -169,6 +172,7 @@ Available MCP tools:
 - `public_pdf_provenance`
 - `public_certua_article_evidence`
 - `decode_public_repeating_xor_config`
+- `fingerprint_public_inline_xor_loader`
 - `public_site_manifest`
 - `public_content_factory_fingerprint`
 - `public_halo_signature_classifier`
@@ -250,6 +254,19 @@ kekmaxxing-xor-config public-config-timeline.json \
   --key-hex 'PUBLICLY_DERIVED_HEX_KEY' \
   --output output/decoded-config.json
 ```
+
+Fingerprint a saved public HTML response containing a numeric-XOR/Base64 inline
+loader. This decoder does not execute the recovered JavaScript, fetch any URL, or
+return the decoded source code:
+
+```bash
+kekmaxxing-inline-loader public-page.html \
+  --output output/inline-loader-fingerprint.json
+```
+
+The normalized hash replaces only extracted contract addresses and `SUBID`
+values. A match therefore supports code reuse across deployments while leaving
+ownership, actor attribution, and payload delivery unresolved.
 
 Known plaintext makes the result reproducible, not attributable. A decoded URL
 still requires independent evidence for ownership, use, delivery, and activity.

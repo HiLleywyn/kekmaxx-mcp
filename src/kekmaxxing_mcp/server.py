@@ -24,6 +24,9 @@ from .fec import (
 )
 from .google_ads import find_advertisers
 from .halo_fingerprint import classify_public_halo_sites
+from .inline_loader import (
+    fingerprint_public_inline_xor_loader as analyze_public_inline_xor_loader,
+)
 from .meta_ads_public import normalize_public_meta_ad_ledger
 from .netlas_halo import analyze_netlas_halo_records
 from .passive import compare_pages, page_fingerprint, resolve_records, tls_certificate
@@ -87,6 +90,17 @@ def decode_public_repeating_xor_config(
         crib_plaintext=crib_plaintext,
         key_hex=key_hex,
     )
+
+
+@mcp.tool()
+def fingerprint_public_inline_xor_loader(html: str) -> dict:
+    """Decode and fingerprint a supplied public inline XOR loader offline.
+
+    This bounded detector extracts hashes, contracts, selectors, subids, and public
+    URLs from a numeric-XOR/Base64 wrapper. It performs no network request and does
+    not execute or return the decoded JavaScript.
+    """
+    return analyze_public_inline_xor_loader(html)
 
 
 @mcp.tool()
