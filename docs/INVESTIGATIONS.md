@@ -139,6 +139,26 @@ political-money, disinformation-narrative, public-counterintelligence,
 infrastructure-relationships, evidence-verification, investigative-report,
 campaign-monitoring. Tests execute each on synthetic attributed cases.
 
+## Codex Security and Daybreak threat-hunting skill
+
+The repository also includes an agent skill at
+[`.agents/skills/hunt-russian-threats`](../.agents/skills/hunt-russian-threats/SKILL.md).
+Codex discovers it in the repository. Invoke it with `$hunt-russian-threats`
+and supply the case seeds, time window, targets and existing authorization.
+
+This workflow combines public-source research, infrastructure and malware/log
+analysis, active reconnaissance and scoped vulnerability validation, attribution
+controls, and defensive reporting. It routes source reviews to an available
+Codex Security workflow and uses the host's configured Daybreak access.
+The skill does not grant model access or install scanning tools.
+
+Active work uses appropriately configured tools within the authorized target
+and technique scope. Kekmaxxing's public collectors retain their existing
+read-only contracts. Store research evidence outside Git.
+
+This is a Codex agent skill, separate from the ten executable MCP profiles
+above; it is not an additional `investigation_workflow_run` profile.
+
 ## CLI, exports and monitoring
 
 All registered tools share one implementation with the CLI:
