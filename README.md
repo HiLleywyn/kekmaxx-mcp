@@ -25,6 +25,8 @@ It combines:
 - bounded provenance inspection of public PDF artifacts, including document
   metadata, visible author cues, reference headings, dated citations, links,
   content hashes, and explicit interpretation limits; and
+- bounded extraction of official CERT-UA article text, lexical indicators, and
+  inline-image hashes, with an optional CLI-only evidence-image export; and
 - bounded public-site manifests that hash same-origin scripts and record forms,
   assets, structured metadata, and public endpoint references without executing
   code, submitting forms, or calling discovered endpoints; and
@@ -163,6 +165,7 @@ Available MCP tools:
 - `public_telegram_citation_audit`
 - `public_telegram_history_probe`
 - `public_pdf_provenance`
+- `public_certua_article_evidence`
 - `public_site_manifest`
 - `public_content_factory_fingerprint`
 - `public_halo_signature_classifier`
@@ -311,6 +314,21 @@ document-level author cues, reference headings, parenthetical publication years,
 and embedded/text links. Missing metadata or references is an investigative lead,
 not proof of deceptive or automated authorship, and the tool does not fact-check
 the document's substantive claims.
+
+Extract bounded evidence from one official CERT-UA article and optionally save
+its inline figures for visual review:
+
+```bash
+kekmaxxing-certua 6319983 \
+  --image-dir output/certua-6319983 \
+  --output output/certua-6319983.json
+```
+
+The MCP tool contacts only CERT-UA's fixed public article API. It returns text,
+response hashes, lexical indicator candidates, and image hashes/dimensions. The
+CLI may write the embedded public figures to an explicit local directory; it
+does not execute scripts or contact any extracted indicator, victim, payload,
+or smart contract.
 
 Build a bounded manifest of a public site's HTML and same-origin scripts:
 

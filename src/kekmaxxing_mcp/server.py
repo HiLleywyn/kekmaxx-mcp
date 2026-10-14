@@ -11,6 +11,7 @@ from .ad_pattern_fingerprint import (
     fingerprint_public_advertiser_churn,
 )
 from .browser import browse
+from .certua_public import inspect_public_certua_article
 from .citation_audit import audit_public_telegram_citations
 from .content_factory import fingerprint_public_content_network
 from .fcc import build_download_url, get_file_details, search_entity_files
@@ -393,6 +394,20 @@ def public_pdf_provenance(url: str, max_bytes: int = 20_000_000, max_pages: int 
     automated authorship, or false content.
     """
     return inspect_public_pdf(url, max_bytes=max_bytes, max_pages=max_pages)
+
+
+@mcp.tool()
+def public_certua_article_evidence(
+    article_id: str, max_bytes: int = 25_000_000, max_text_chars: int = 40_000
+) -> dict:
+    """Extract bounded text, indicators, and inline-image hashes from one CERT-UA article.
+
+    Only CERT-UA's fixed public API endpoint is contacted. Embedded scripts and images
+    are never executed, and extracted indicators are not requested.
+    """
+    return inspect_public_certua_article(
+        article_id, max_bytes=max_bytes, max_text_chars=max_text_chars
+    )
 
 
 @mcp.tool()
