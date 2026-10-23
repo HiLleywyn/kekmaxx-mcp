@@ -51,6 +51,7 @@ from .source_audit import (
     source_complexity_hotspots,
     source_lifetime_hotspots,
     source_snapshot_manifest,
+    source_validation_hotspots,
 )
 from .telegram_public import probe_public_telegram_history
 from .timeline import analyze_public_post_timelines as analyze_timelines
@@ -139,6 +140,27 @@ def local_complexity_series(
     same-size negative control before supporting a vulnerability report.
     """
     return analyze_complexity_series(observations, max_observations=max_observations)
+
+
+@mcp.tool()
+def local_source_validation_hotspots(
+    repository: str,
+    max_results: int = 100,
+    max_files: int = 20_000,
+    max_file_bytes: int = 2_000_000,
+) -> dict:
+    """Find bounded cryptographic and certificate-validation review leads offline.
+
+    Results flag verifier calls near relaxed flags, null validation contexts, or
+    unusual result predicates. They require primary-documentation review and
+    isolated positive and negative controls before supporting a security claim.
+    """
+    return source_validation_hotspots(
+        repository,
+        max_results=max_results,
+        max_files=max_files,
+        max_file_bytes=max_file_bytes,
+    )
 
 
 @mcp.tool()

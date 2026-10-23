@@ -9,6 +9,7 @@ from kekmaxxing_mcp.source_audit import (
     source_complexity_hotspots,
     source_lifetime_hotspots,
     source_snapshot_manifest,
+    source_validation_hotspots,
 )
 
 
@@ -45,6 +46,11 @@ int compile_pattern(char *data, int len) {
         }
     }
     return 0;
+}
+
+int validate_response(void *response, void *chain) {
+    if (OCSP_basic_verify(response, chain, NULL, OCSP_NOVERIFY) != 1) return 0;
+    return 1;
 }
 """,
         encoding="utf-8",
@@ -103,6 +109,21 @@ def test_complexity_hotspots_find_nested_expensive_operation(tmp_path: Path) -> 
     match = next(item for item in result["matches"] if "memcmp" in item["excerpt"])
     assert match["path"] == "worker.c"
     assert "nested_loop_window" in match["reason_tags"]
+    assert result["target_code_executed"] is False
+
+
+def test_validation_hotspots_flag_relaxed_verifier_policy(tmp_path: Path) -> None:
+    repo = _repository(tmp_path)
+
+    result = source_validation_hotspots(str(repo), max_results=5)
+
+    match = next(item for item in result["matches"] if "OCSP_basic_verify" in item["excerpt"])
+    assert match["path"] == "worker.c"
+    assert "verification_relaxation_flag_nearby" in match["reason_tags"]
+    assert "null_validation_context_nearby" in match["reason_tags"]
+    assert "result_predicate_requires_contract_review" in match["reason_tags"]
+    assert str(repo) not in repr(result)
+    assert result["network_access"] is False
     assert result["target_code_executed"] is False
 
 

@@ -1,3 +1,3 @@
 """Kekmaxxing public-source research MCP."""
 
-__version__ = "0.2.7"
+__version__ = "0.4.2"

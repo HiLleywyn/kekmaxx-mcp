@@ -37,6 +37,25 @@ _EXPENSIVE_RE = re.compile(
     r"pcre_exec|find|search|match|compare)\s*\(",
     re.IGNORECASE,
 )
+_VALIDATION_API_RE = re.compile(
+    r"\b(?:OCSP_basic_verify|X509_verify_cert|SSL_get_verify_result|"
+    r"EVP_DigestVerify(?:Final)?|RSA_verify|ECDSA_verify|"
+    r"verify_(?:certificate|signature|chain|response)|validate_(?:certificate|response))\s*\(",
+    re.IGNORECASE,
+)
+_RELAXED_VALIDATION_RE = re.compile(
+    r"(?:NOVERIFY|NO_VERIFY|NOINTERN|NO_INTERN|VERIFY_NONE|"
+    r"INSECURE_SKIP_VERIFY|SKIP_[A-Z0-9_]*VERIFY|SSL_VERIFYPEER\s*,\s*0)\b",
+    re.IGNORECASE,
+)
+_NULL_VALIDATION_CONTEXT_RE = re.compile(
+    r"\b(?:OCSP_basic_verify|verify_(?:certificate|signature|chain|response)|"
+    r"validate_(?:certificate|response))\s*\([^;\n]*\bNULL\b",
+    re.IGNORECASE,
+)
+_RESULT_PREDICATE_RE = re.compile(
+    r"(?:==\s*0|!=\s*1|<=\s*0|<\s*0|!\s*[A-Za-z_][A-Za-z0-9_]*\s*\()"
+)
 
 
 class SourceAuditError(ValueError):
@@ -421,6 +440,69 @@ def source_complexity_hotspots(
         "interpretation": (
             "Heuristic review leads only. Confirm attacker influence, asymptotic behavior, "
             "realistic input bounds, and worker impact with a disposable local harness."
+        ),
+        "network_access": False,
+        "target_code_executed": False,
+    }
+
+
+def source_validation_hotspots(
+    repository: str,
+    max_results: int = 100,
+    max_files: int = 20_000,
+    max_file_bytes: int = 2_000_000,
+) -> dict[str, object]:
+    """Find security-verifier calls whose surrounding policy deserves review.
+
+    The detector is deliberately syntactic. It highlights relaxed-verification
+    constants, null validation contexts, and noncanonical result predicates, but
+    it does not decide whether a call is unsafe for the product's actual policy.
+    """
+
+    if not 1 <= max_results <= 500:
+        raise SourceAuditError("max_results must be between 1 and 500")
+    root = _repo_root(repository)
+    files = _source_files(root, max_files, max_file_bytes)
+    matches: list[dict[str, object]] = []
+
+    for relative, text in files:
+        lines = text.splitlines()
+        for line_index, line in enumerate(lines):
+            if not _VALIDATION_API_RE.search(line):
+                continue
+            start = max(0, line_index - 6)
+            end = min(len(lines), line_index + 7)
+            window = "\n".join(lines[start:end])
+            reasons = ["security_validation_api"]
+            if _RELAXED_VALIDATION_RE.search(window):
+                reasons.append("verification_relaxation_flag_nearby")
+            if _NULL_VALIDATION_CONTEXT_RE.search(window):
+                reasons.append("null_validation_context_nearby")
+            if _RESULT_PREDICATE_RE.search(window):
+                reasons.append("result_predicate_requires_contract_review")
+            matches.append(
+                {
+                    "path": relative,
+                    "line": line_index + 1,
+                    "reason_tags": reasons,
+                    "excerpt": _excerpt(lines, start, end),
+                }
+            )
+            if len(matches) >= max_results:
+                break
+        if len(matches) >= max_results:
+            break
+
+    return {
+        "schema_version": 1,
+        "repository_name": root.name,
+        "files_considered": len(files),
+        "matches": matches,
+        "truncated": len(matches) >= max_results,
+        "interpretation": (
+            "Heuristic review leads only. Read the verifier's primary API contract, "
+            "separate signature mathematics from signer or chain authorization, and "
+            "validate with positive, wrong-authority, and corrupted-input controls."
         ),
         "network_access": False,
         "target_code_executed": False,
