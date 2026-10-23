@@ -47,6 +47,7 @@ from .rdap_public import inspect_public_rdap
 from .site_manifest import inspect_public_site_manifest
 from .snapshot_delta import compare_public_snapshots
 from .source_audit import (
+    analyze_complexity_series,
     source_complexity_hotspots,
     source_lifetime_hotspots,
     source_snapshot_manifest,
@@ -125,6 +126,19 @@ def local_source_complexity_hotspots(
         max_files=max_files,
         max_file_bytes=max_file_bytes,
     )
+
+
+@mcp.tool()
+def local_complexity_series(
+    observations: list[dict[str, object]], max_observations: int = 2_000
+) -> dict:
+    """Fit empirical cost-vs-input curves from supplied local measurements.
+
+    This offline analysis never executes target code or contacts a target. Its
+    classifications are triage evidence and require source-level proof plus a
+    same-size negative control before supporting a vulnerability report.
+    """
+    return analyze_complexity_series(observations, max_observations=max_observations)
 
 
 @mcp.tool()

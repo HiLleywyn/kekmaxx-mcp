@@ -4,6 +4,8 @@ import subprocess
 from pathlib import Path
 
 from kekmaxxing_mcp.source_audit import (
+    SourceAuditError,
+    analyze_complexity_series,
     source_complexity_hotspots,
     source_lifetime_hotspots,
     source_snapshot_manifest,
@@ -102,3 +104,66 @@ def test_complexity_hotspots_find_nested_expensive_operation(tmp_path: Path) -> 
     assert match["path"] == "worker.c"
     assert "nested_loop_window" in match["reason_tags"]
     assert result["target_code_executed"] is False
+
+
+def test_complexity_series_classifies_cubic_measurements_with_repeats() -> None:
+    observations = [
+        {"series": "repeated", "size": size, "cost": scale * size**3}
+        for size in (64, 128, 256, 512)
+        for scale in (0.95, 1.0, 1.05)
+    ]
+
+    result = analyze_complexity_series(observations)
+
+    series = result["series"][0]
+    assert series["classification"] == "approximately_cubic"
+    assert series["log_log_exponent"] == 3.0
+    assert series["r_squared"] == 1.0
+    assert all(point["sample_count"] == 3 for point in series["points"])
+    assert result["network_access"] is False
+    assert result["target_code_executed"] is False
+
+
+def test_complexity_series_keeps_controls_separate() -> None:
+    observations = [
+        {"series": series, "size": size, "cost": size**exponent}
+        for series, exponent in (("control", 1), ("candidate", 2))
+        for size in (32, 64, 128)
+    ]
+
+    result = analyze_complexity_series(observations)
+
+    labels = {item["series"]: item["classification"] for item in result["series"]}
+    assert labels == {
+        "candidate": "approximately_quadratic",
+        "control": "approximately_linear",
+    }
+
+
+def test_complexity_series_rejects_nonfinite_input() -> None:
+    try:
+        analyze_complexity_series(
+            [
+                {"size": 1, "cost": 1.0},
+                {"size": 2, "cost": float("inf")},
+                {"size": 4, "cost": 4.0},
+            ]
+        )
+    except SourceAuditError as exc:
+        assert "finite and positive" in str(exc)
+    else:
+        raise AssertionError("non-finite cost was accepted")
+
+
+def test_complexity_series_rejects_unsafe_series_label() -> None:
+    try:
+        analyze_complexity_series(
+            [
+                {"series": "line\nbreak", "size": size, "cost": size}
+                for size in (1, 2, 4)
+            ]
+        )
+    except SourceAuditError as exc:
+        assert "invalid series label" in str(exc)
+    else:
+        raise AssertionError("unsafe series label was accepted")

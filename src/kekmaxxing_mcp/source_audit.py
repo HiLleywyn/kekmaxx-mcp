@@ -8,7 +8,9 @@ review snapshots and candidate triage reproducible without leaking local paths.
 from __future__ import annotations
 
 import hashlib
+import math
 import re
+import statistics
 import subprocess
 from pathlib import Path
 from urllib.parse import urlsplit
@@ -39,6 +41,117 @@ _EXPENSIVE_RE = re.compile(
 
 class SourceAuditError(ValueError):
     """Raised when a local source snapshot cannot be inspected safely."""
+
+
+def _complexity_label(exponent: float) -> str:
+    if exponent < 0.4:
+        return "approximately_constant"
+    if exponent < 1.35:
+        return "approximately_linear"
+    if exponent < 2.35:
+        return "approximately_quadratic"
+    if exponent < 3.35:
+        return "approximately_cubic"
+    return "super_cubic_or_unstable"
+
+
+def analyze_complexity_series(
+    observations: list[dict[str, object]],
+    max_observations: int = 2_000,
+) -> dict[str, object]:
+    """Fit bounded empirical cost curves without executing or contacting a target.
+
+    Each observation contains ``size``, ``cost``, and an optional short ``series``
+    label. Repeated measurements at one size are reduced to their median before a
+    log-log slope is fitted. The result is triage evidence, not asymptotic proof.
+    """
+
+    if not 3 <= max_observations <= 10_000:
+        raise SourceAuditError("max_observations must be between 3 and 10000")
+    if not 3 <= len(observations) <= max_observations:
+        raise SourceAuditError("observations must contain between 3 and max_observations rows")
+
+    grouped: dict[str, dict[int, list[float]]] = {}
+    for index, row in enumerate(observations):
+        if not isinstance(row, dict):
+            raise SourceAuditError(f"observation {index} must be an object")
+        unexpected = set(row) - {"series", "size", "cost"}
+        if unexpected:
+            raise SourceAuditError(f"observation {index} has unsupported fields")
+
+        label = row.get("series", "default")
+        size = row.get("size")
+        cost = row.get("cost")
+        if not isinstance(label, str) or not re.fullmatch(
+            r"[A-Za-z0-9][A-Za-z0-9_.-]{0,63}", label
+        ):
+            raise SourceAuditError(f"observation {index} has an invalid series label")
+        if not isinstance(size, int) or isinstance(size, bool) or size <= 0:
+            raise SourceAuditError(f"observation {index} size must be a positive integer")
+        if not isinstance(cost, (int, float)) or isinstance(cost, bool):
+            raise SourceAuditError(f"observation {index} cost must be numeric")
+        numeric_cost = float(cost)
+        if not math.isfinite(numeric_cost) or numeric_cost <= 0:
+            raise SourceAuditError(f"observation {index} cost must be finite and positive")
+
+        grouped.setdefault(label, {}).setdefault(size, []).append(numeric_cost)
+        if len(grouped) > 32:
+            raise SourceAuditError("observations may contain at most 32 series")
+
+    series_results: list[dict[str, object]] = []
+    for label in sorted(grouped):
+        medians = [
+            {
+                "size": size,
+                "median_cost": statistics.median(grouped[label][size]),
+                "sample_count": len(grouped[label][size]),
+            }
+            for size in sorted(grouped[label])
+        ]
+        if len(medians) < 3:
+            raise SourceAuditError(f"series {label!r} needs at least three distinct sizes")
+
+        xs = [math.log(float(point["size"])) for point in medians]
+        ys = [math.log(float(point["median_cost"])) for point in medians]
+        x_mean = statistics.fmean(xs)
+        y_mean = statistics.fmean(ys)
+        denominator = sum((value - x_mean) ** 2 for value in xs)
+        slope = sum((x - x_mean) * (y - y_mean) for x, y in zip(xs, ys, strict=True))
+        slope /= denominator
+        intercept = y_mean - slope * x_mean
+        predicted = [intercept + slope * value for value in xs]
+        residual = sum((actual - fitted) ** 2 for actual, fitted in zip(ys, predicted, strict=True))
+        total = sum((actual - y_mean) ** 2 for actual in ys)
+        r_squared = 1.0 if total == 0 else max(0.0, 1.0 - residual / total)
+
+        local_exponents = [
+            math.log(float(right["median_cost"]) / float(left["median_cost"]))
+            / math.log(float(right["size"]) / float(left["size"]))
+            for left, right in zip(medians, medians[1:], strict=False)
+        ]
+        series_results.append(
+            {
+                "series": label,
+                "points": medians,
+                "log_log_exponent": round(slope, 6),
+                "r_squared": round(r_squared, 6),
+                "median_local_exponent": round(statistics.median(local_exponents), 6),
+                "classification": _complexity_label(slope),
+            }
+        )
+
+    return {
+        "schema_version": 1,
+        "observation_count": len(observations),
+        "series": series_results,
+        "interpretation": (
+            "Empirical log-log fits are validation aids, not proofs of algorithmic complexity. "
+            "Preserve raw measurements, use same-size negative controls, and confirm the "
+            "source-level operation count before making a security claim."
+        ),
+        "network_access": False,
+        "target_code_executed": False,
+    }
 
 
 def _git(root: Path, *args: str, timeout: int = 20) -> bytes:

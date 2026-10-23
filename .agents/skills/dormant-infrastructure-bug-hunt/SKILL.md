@@ -38,6 +38,9 @@ Review recurring historical seams:
 
 Use `local_source_lifetime_hotspots` and `local_source_complexity_hotspots` only
 as bounded lead generators. Never convert their output directly into a finding.
+Use `local_complexity_series` to compare preserved candidate and control
+measurements across at least three distinct input sizes. Treat its fitted
+exponent as empirical evidence, not an asymptotic proof.
 
 ## Validate a candidate
 

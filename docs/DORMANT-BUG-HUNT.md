@@ -25,6 +25,13 @@ callback, or work scheduling with nearby allocation or teardown operations.
 `local_source_complexity_hotspots` finds loops containing length-dependent string
 or memory operations, including nested-loop windows.
 
+When a candidate reaches measurement, feed preserved `{series, size, cost}` rows
+to `local_complexity_series`. It reduces repeated trials to per-size medians,
+fits a log-log exponent, reports fit quality, and keeps candidate and control
+series separate. The classification is an empirical validation aid—not proof of
+Big-O behavior. Confirm the source-level operation count and use a same-size
+negative control before treating the curve as security evidence.
+
 These are intentionally noisy static heuristics. A match is not a finding. It
 must survive manual review for attacker influence, realistic configuration,
 source-to-sink reachability, cleanup ordering, input bounds, and existing
@@ -37,6 +44,11 @@ Prefer exact upstream source and configuration. When an extracted harness is
 necessary, preserve the copied logic and explain every difference from the
 product path. Include negative controls, precise commands, compiler/runtime
 versions, timings or sanitizer output, and artifact hashes.
+
+For complexity candidates, record at least three distinct sizes, repeat noisy
+runtime measurements, retain every raw observation, and compare an adversarial
+input with a same-length non-adversarial control. A timeout is evidence only when
+the tested topology, competing request, process state, and cleanup are explicit.
 
 Do not probe public installations, reuse credentials, or execute retrieved
 artifacts. Keep active experiments inside an owned local container, VM, or test
