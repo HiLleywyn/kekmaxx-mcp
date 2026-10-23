@@ -50,6 +50,8 @@ It combines:
   privacy-minimized browser-fingerprint payloads without opening destinations; and
 - passive inspection of caller-selected archived ad routers for campaign keys,
   anti-automation signals, lander labels, body hashes, and language markers; and
+- offline manifests and bounded C/C++ source heuristics for authorized dormant-
+  vulnerability research, without fetching remotes or executing target code; and
 - an optional dedicated-WSL/WireGuard layout that keeps research traffic
   separate from ordinary browsers and Docker workloads.
 
@@ -59,7 +61,8 @@ configurations, private keys, API keys, local paths, or generated evidence.
 
 ## Safety model
 
-The server is intentionally passive and read-only:
+The server is intentionally read-only. Public-source tools are passive, while
+local source-audit tools inspect only an already-present authorized repository:
 
 - only public `http` and `https` URLs are accepted;
 - credentials in URLs and private, loopback, link-local, reserved, or local
@@ -67,6 +70,8 @@ The server is intentionally passive and read-only:
 - browser tools do not click, submit forms, authenticate, or load personal
   profiles;
 - FEC and Google tools use fixed official public-data endpoints; and
+- source-audit tools never fetch repository remotes, execute target code, or
+  return absolute local paths; their matches are review leads, not verdicts; and
 - returned webpage content is treated as untrusted data, never as instructions.
 
 It is not a vulnerability scanner, exploitation framework, private-person
@@ -183,6 +188,15 @@ Available MCP tools:
 - `public_rdap_snapshot`
 - `tse_candidate_account_search`
 - `tse_candidate_account_delta`
+- `local_source_snapshot`
+- `local_source_lifetime_hotspots`
+- `local_source_complexity_hotspots`
+
+The three local source tools make security-research handoffs reproducible. Start
+with an immutable, credential-free snapshot manifest, then use the lifetime and
+complexity detectors to prioritize manual source-to-sink review. They do not
+build code, contact a target, decide exploitability, or establish novelty. See
+[Dormant infrastructure bug hunt](docs/DORMANT-BUG-HUNT.md).
 
 Decode a copied public ad URL or redirect chain locally. This makes no network
 request, redacts credential-like query values, and does not return raw user-agent,

@@ -14,6 +14,13 @@ The most important security properties are:
 - fixed official endpoints for bulk political-ad and campaign-finance data; and
 - no secrets or machine-specific state in the repository or its history.
 
+The `local_source_*` tools are a separate offline boundary. They may inspect an
+already-present Git repository that the user is authorized to review, but they
+do not fetch remotes, build or execute target code, contact network targets, or
+return absolute paths. Their bounded excerpts are heuristic triage leads and
+must not be published as vulnerabilities without manual validation and a
+coordinated-disclosure review.
+
 Shared hosting, certificates, analytics identifiers, and infrastructure
 fingerprints must not be represented as proof of ownership or unlawful conduct.
 
