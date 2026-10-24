@@ -48,8 +48,11 @@ from .site_manifest import inspect_public_site_manifest
 from .snapshot_delta import compare_public_snapshots
 from .source_audit import (
     analyze_complexity_series,
+    analyze_paired_benchmark_trials,
+    source_cache_key_hotspots,
     source_complexity_hotspots,
     source_lifetime_hotspots,
+    source_parser_progress_hotspots,
     source_snapshot_manifest,
     source_validation_hotspots,
 )
@@ -161,6 +164,58 @@ def local_source_validation_hotspots(
         max_files=max_files,
         max_file_bytes=max_file_bytes,
     )
+
+
+@mcp.tool()
+def local_source_parser_progress_hotspots(
+    repository: str,
+    max_results: int = 100,
+    max_files: int = 20_000,
+    max_file_bytes: int = 2_000_000,
+) -> dict:
+    """Find count-bounded parser loops with possible no-progress failure paths.
+
+    This static, offline heuristic requires manual proof of attacker-controlled
+    bounds, unchanged parser state, realistic repetition, and worker impact.
+    """
+    return source_parser_progress_hotspots(
+        repository,
+        max_results=max_results,
+        max_files=max_files,
+        max_file_bytes=max_file_bytes,
+    )
+
+
+@mcp.tool()
+def local_source_cache_key_hotspots(
+    repository: str,
+    max_results: int = 100,
+    max_files: int = 20_000,
+    max_file_bytes: int = 2_000_000,
+) -> dict:
+    """Find fixed-scheme cache-key construction windows for boundary review.
+
+    Results are candidate identity collapses, not cache-poisoning findings.
+    Validate the complete key, configuration, origin behavior, and controls.
+    """
+    return source_cache_key_hotspots(
+        repository,
+        max_results=max_results,
+        max_files=max_files,
+        max_file_bytes=max_file_bytes,
+    )
+
+
+@mcp.tool()
+def local_paired_benchmark_trials(
+    observations: list[dict[str, object]], max_observations: int = 2_000
+) -> dict:
+    """Summarize supplied same-harness candidate/control benchmark pairs.
+
+    The offline calculation does not run target code. Preserve raw timings and
+    repeat the comparison against a patched negative control before reporting.
+    """
+    return analyze_paired_benchmark_trials(observations, max_observations=max_observations)
 
 
 @mcp.tool()

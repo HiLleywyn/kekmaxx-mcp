@@ -31,12 +31,33 @@ whose exact API contract needs review. It is useful for distinguishing
 cryptographic signature checks from signer authorization, chain validation,
 hostname checks, freshness, revocation state, and other separate policy layers.
 
+`local_source_parser_progress_hotspots` looks for count-bounded parser loops in
+which a failure branch continues without visible cursor progress. It is designed
+to surface the durable pattern “attacker supplies a large count; every failed
+item reparses the same bytes.” Confirm both attacker control and actual parser
+state manually: macros, helper side effects, and progress outside the excerpt
+can disprove a match.
+
+`local_source_cache_key_hotspots` finds fixed-scheme literals near cache or
+identity-key construction. For each lead, write the full resource identity on
+one side and the actual cache key on the other. Compare scheme, authority,
+method, tenant, authorization state, content negotiation, deployment namespace,
+and every frontend trust boundary. Shared infrastructure or a literal string is
+not itself cache poisoning.
+
 When a candidate reaches measurement, feed preserved `{series, size, cost}` rows
 to `local_complexity_series`. It reduces repeated trials to per-size medians,
 fits a log-log exponent, reports fit quality, and keeps candidate and control
 series separate. The classification is an empirical validation aid—not proof of
 Big-O behavior. Confirm the source-level operation count and use a same-size
 negative control before treating the curve as security evidence.
+
+For fixed-size attack/control trials, use `local_paired_benchmark_trials`. Feed
+it rows containing `candidate_cost`, `control_cost`, and optionally the number of
+`operations`. It reports paired deltas and ratios so host or build drift does not
+masquerade as impact. Run the vulnerable candidate, same-size control, and
+patched negative control with the same binary configuration and process
+topology; retain the raw rows because medians are not a substitute for evidence.
 
 These are intentionally noisy static heuristics. A match is not a finding. It
 must survive manual review for attacker influence, realistic configuration,
@@ -61,6 +82,13 @@ For complexity candidates, record at least three distinct sizes, repeat noisy
 runtime measurements, retain every raw observation, and compare an adversarial
 input with a same-length non-adversarial control. A timeout is evidence only when
 the tested topology, competing request, process state, and cleanup are explicit.
+
+For protocol parsers, keep mutation and sanitizer work local. Bound corpus size,
+connection count, wall time, and output; record the exact seed and build; assert
+that the process survives; and preserve sanitizer output even when the result is
+negative. A crash in an extracted parser is not a product finding until the same
+path is reachable in the product. A tested patch must make the original
+reproducer fail safely while leaving valid boundary cases intact.
 
 For lifetime candidates, draw the ownership edge explicitly: allocation owner,
 stored pointer or handle, retention mechanism, teardown event, later lookup,

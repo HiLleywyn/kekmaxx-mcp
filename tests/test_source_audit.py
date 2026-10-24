@@ -6,8 +6,11 @@ from pathlib import Path
 from kekmaxxing_mcp.source_audit import (
     SourceAuditError,
     analyze_complexity_series,
+    analyze_paired_benchmark_trials,
+    source_cache_key_hotspots,
     source_complexity_hotspots,
     source_lifetime_hotspots,
+    source_parser_progress_hotspots,
     source_snapshot_manifest,
     source_validation_hotspots,
 )
@@ -50,6 +53,34 @@ int compile_pattern(char *data, int len) {
 
 int validate_response(void *response, void *chain) {
     if (OCSP_basic_verify(response, chain, NULL, OCSP_NOVERIFY) != 1) return 0;
+    return 1;
+}
+
+int parse_records(struct packet *packet, struct header *header) {
+    for (int i = 0; i < header->record_count; i++) {
+        int length = read_record(packet->reader, &packet->offset);
+        if (length == 0) continue;
+        packet->reader += packet->offset;
+    }
+    return 1;
+}
+
+void build_cache_key(struct buffer *key, struct request *request) {
+    cache_hash_add(key, "https://");
+    cache_hash_add(key, request->host);
+    cache_hash_add(key, request->uri);
+}
+
+int retry_interrupted_read(int fd, char *buffer, int size) {
+    int position = 0;
+    while (position < size) {
+        int length = read(fd, buffer + position, size - position);
+        if (length < 0) {
+            if (errno == EINTR) continue;
+            return 0;
+        }
+        position += length;
+    }
     return 1;
 }
 """,
@@ -127,6 +158,34 @@ def test_validation_hotspots_flag_relaxed_verifier_policy(tmp_path: Path) -> Non
     assert result["target_code_executed"] is False
 
 
+def test_parser_progress_hotspots_flag_no_progress_continue(tmp_path: Path) -> None:
+    repo = _repository(tmp_path)
+
+    result = source_parser_progress_hotspots(str(repo), max_results=5)
+
+    match = next(item for item in result["matches"] if "read_record" in item["excerpt"])
+    assert match["path"] == "worker.c"
+    assert "count_bounded_parser_loop" in match["reason_tags"]
+    assert "parse_failure_continue_path" in match["reason_tags"]
+    assert "no_cursor_progress_visible_before_continue" in match["reason_tags"]
+    assert len(result["matches"]) == 1
+    assert result["network_access"] is False
+    assert result["target_code_executed"] is False
+
+
+def test_cache_key_hotspots_flag_fixed_scheme_identity(tmp_path: Path) -> None:
+    repo = _repository(tmp_path)
+
+    result = source_cache_key_hotspots(str(repo), max_results=5)
+
+    match = next(item for item in result["matches"] if '"https://"' in item["excerpt"])
+    assert match["path"] == "worker.c"
+    assert "fixed_scheme_literal_in_key_window" in match["reason_tags"]
+    assert {"host", "uri"}.issubset(match["visible_dimensions"])
+    assert result["network_access"] is False
+    assert result["target_code_executed"] is False
+
+
 def test_complexity_series_classifies_cubic_measurements_with_repeats() -> None:
     observations = [
         {"series": "repeated", "size": size, "cost": scale * size**3}
@@ -188,3 +247,21 @@ def test_complexity_series_rejects_unsafe_series_label() -> None:
         assert "invalid series label" in str(exc)
     else:
         raise AssertionError("unsafe series label was accepted")
+
+
+def test_paired_benchmark_trials_preserve_pairing_and_operations() -> None:
+    result = analyze_paired_benchmark_trials(
+        [
+            {"candidate_cost": 0.50, "control_cost": 0.10, "operations": 100},
+            {"candidate_cost": 0.55, "control_cost": 0.11, "operations": 100},
+            {"candidate_cost": 0.45, "control_cost": 0.09, "operations": 100},
+        ]
+    )
+
+    assert result["pair_count"] == 3
+    assert result["median_paired_ratio"] == 5.0
+    assert result["median_paired_delta"] == 0.4
+    assert result["median_delta_per_operation"] == 0.004
+    assert result["candidate_slower_pairs"] == 3
+    assert result["network_access"] is False
+    assert result["target_code_executed"] is False

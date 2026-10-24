@@ -193,12 +193,16 @@ Available MCP tools:
 - `local_source_complexity_hotspots`
 - `local_complexity_series`
 - `local_source_validation_hotspots`
+- `local_source_parser_progress_hotspots`
+- `local_source_cache_key_hotspots`
+- `local_paired_benchmark_trials`
 
 The local source tools make security-research handoffs reproducible. Start
 with an immutable, credential-free snapshot manifest, then use the lifetime,
-complexity, and validation-policy detectors to prioritize manual source-to-sink
-review, and analyze preserved cost curves without executing a target. They do not
-build code, contact a target, decide exploitability, or establish novelty. See
+complexity, validation-policy, parser-progress, and cache-identity detectors to
+prioritize manual source-to-sink review, and analyze preserved cost curves or
+paired candidate/control trials without executing a target. They do not build
+code, contact a target, decide exploitability, or establish novelty. See
 [Dormant infrastructure bug hunt](docs/DORMANT-BUG-HUNT.md).
 
 Decode a copied public ad URL or redirect chain locally. This makes no network

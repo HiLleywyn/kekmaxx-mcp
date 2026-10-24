@@ -56,6 +56,37 @@ _NULL_VALIDATION_CONTEXT_RE = re.compile(
 _RESULT_PREDICATE_RE = re.compile(
     r"(?:==\s*0|!=\s*1|<=\s*0|<\s*0|!\s*[A-Za-z_][A-Za-z0-9_]*\s*\()"
 )
+_COUNT_LOOP_RE = re.compile(
+    r"\b(?:for|while)\s*\([^\n)]*(?:count|num|number|length|len|size|nr|records?)"
+    r"[A-Za-z0-9_.>\-]*[^\n)]*\)",
+    re.IGNORECASE,
+)
+_PARSE_CALL_RE = re.compile(
+    r"\b(?:[A-Za-z0-9]+_)*(?:parse|read|decode|unpack|consume|scan|extract)"
+    r"(?:_[A-Za-z0-9]+)*\s*\(",
+    re.IGNORECASE,
+)
+_FAILURE_CONTINUE_RE = re.compile(
+    r"\bif\s*\([^\n)]*(?:==\s*0|<\s*0|!\s*[A-Za-z_][A-Za-z0-9_]*)[^\n)]*\)"
+    r"\s*(?:\{[^{}]{0,240})?\bcontinue\s*;",
+    re.IGNORECASE | re.DOTALL,
+)
+_CURSOR_PROGRESS_RE = re.compile(
+    r"\b(?:reader|cursor|position|pos|offset|index|idx|input|ptr|pointer|p)\b\s*"
+    r"(?:\+\+|--|\+=|-=|=\s*(?:[^;]+\+|[^;]+-))|"
+    r"\b(?:advance|consume|skip|seek)[A-Za-z0-9_]*\s*\(",
+    re.IGNORECASE,
+)
+_TRANSIENT_RETRY_RE = re.compile(r"\b(?:EINTR|EAGAIN|EWOULDBLOCK)\b")
+_CACHE_KEY_CONTEXT_RE = re.compile(
+    r"\b(?:cache|cache_key|key|digest|hash|sha1|sha256|md5)[A-Za-z0-9_]*\b",
+    re.IGNORECASE,
+)
+_CACHE_RESOURCE_RE = re.compile(
+    r"\b(?:host|authority|uri|url|path|scheme|protocol|method|tenant|user|vary)\b",
+    re.IGNORECASE,
+)
+_FIXED_SCHEME_RE = re.compile(r"[\"']https?://[\"']", re.IGNORECASE)
 
 
 class SourceAuditError(ValueError):
@@ -171,6 +202,87 @@ def analyze_complexity_series(
         "network_access": False,
         "target_code_executed": False,
     }
+
+
+def analyze_paired_benchmark_trials(
+    observations: list[dict[str, object]],
+    max_observations: int = 2_000,
+) -> dict[str, object]:
+    """Summarize paired candidate/control measurements from one local harness.
+
+    Each row contains ``candidate_cost`` and ``control_cost`` measured in the
+    same unit, plus an optional positive ``operations`` count. Pairing reduces
+    build, host, and scheduling drift; it does not establish exploitability.
+    """
+
+    if not 3 <= max_observations <= 10_000:
+        raise SourceAuditError("max_observations must be between 3 and 10000")
+    if not 3 <= len(observations) <= max_observations:
+        raise SourceAuditError("observations must contain between 3 and max_observations rows")
+
+    candidates: list[float] = []
+    controls: list[float] = []
+    deltas: list[float] = []
+    ratios: list[float] = []
+    per_operation: list[float] = []
+
+    for index, row in enumerate(observations):
+        if not isinstance(row, dict):
+            raise SourceAuditError(f"observation {index} must be an object")
+        unexpected = set(row) - {"candidate_cost", "control_cost", "operations"}
+        if unexpected:
+            raise SourceAuditError(f"observation {index} has unsupported fields")
+
+        candidate = row.get("candidate_cost")
+        control = row.get("control_cost")
+        if not isinstance(candidate, (int, float)) or isinstance(candidate, bool):
+            raise SourceAuditError(f"observation {index} candidate_cost must be numeric")
+        if not isinstance(control, (int, float)) or isinstance(control, bool):
+            raise SourceAuditError(f"observation {index} control_cost must be numeric")
+        candidate_value = float(candidate)
+        control_value = float(control)
+        if not math.isfinite(candidate_value) or candidate_value <= 0:
+            raise SourceAuditError(
+                f"observation {index} candidate_cost must be finite and positive"
+            )
+        if not math.isfinite(control_value) or control_value <= 0:
+            raise SourceAuditError(
+                f"observation {index} control_cost must be finite and positive"
+            )
+
+        operations = row.get("operations")
+        if operations is not None:
+            if not isinstance(operations, int) or isinstance(operations, bool) or operations <= 0:
+                raise SourceAuditError(
+                    f"observation {index} operations must be a positive integer"
+                )
+            per_operation.append((candidate_value - control_value) / operations)
+
+        candidates.append(candidate_value)
+        controls.append(control_value)
+        deltas.append(candidate_value - control_value)
+        ratios.append(candidate_value / control_value)
+
+    result: dict[str, object] = {
+        "schema_version": 1,
+        "pair_count": len(observations),
+        "median_candidate_cost": statistics.median(candidates),
+        "median_control_cost": statistics.median(controls),
+        "median_paired_delta": statistics.median(deltas),
+        "median_paired_ratio": statistics.median(ratios),
+        "candidate_slower_pairs": sum(delta > 0 for delta in deltas),
+        "operation_normalized_pairs": len(per_operation),
+        "interpretation": (
+            "Paired measurements reduce environmental drift but do not prove attacker control, "
+            "availability impact, or asymptotic complexity. Preserve raw rows and validate a "
+            "patched negative control in the same build and process topology."
+        ),
+        "network_access": False,
+        "target_code_executed": False,
+    }
+    if per_operation:
+        result["median_delta_per_operation"] = statistics.median(per_operation)
+    return result
 
 
 def _git(root: Path, *args: str, timeout: int = 20) -> bytes:
@@ -329,6 +441,22 @@ def _excerpt(lines: list[str], start: int, end: int, max_chars: int = 1_200) -> 
     if len(rendered) > max_chars:
         return rendered[: max_chars - 1] + "…"
     return rendered
+
+
+def _block_window_end(lines: list[str], start: int, max_lines: int = 36) -> int:
+    """Return a bounded approximate end for the braced statement at ``start``."""
+
+    limit = min(len(lines), start + max_lines)
+    depth = 0
+    opened = False
+    for index in range(start, limit):
+        depth += lines[index].count("{")
+        if "{" in lines[index]:
+            opened = True
+        depth -= lines[index].count("}")
+        if opened and depth <= 0:
+            return index + 1
+    return limit if opened else min(limit, start + 8)
 
 
 def source_lifetime_hotspots(
@@ -503,6 +631,128 @@ def source_validation_hotspots(
             "Heuristic review leads only. Read the verifier's primary API contract, "
             "separate signature mathematics from signer or chain authorization, and "
             "validate with positive, wrong-authority, and corrupted-input controls."
+        ),
+        "network_access": False,
+        "target_code_executed": False,
+    }
+
+
+def source_parser_progress_hotspots(
+    repository: str,
+    max_results: int = 100,
+    max_files: int = 20_000,
+    max_file_bytes: int = 2_000_000,
+) -> dict[str, object]:
+    """Find count-bounded parser loops with a possible no-progress continue path."""
+
+    if not 1 <= max_results <= 500:
+        raise SourceAuditError("max_results must be between 1 and 500")
+    root = _repo_root(repository)
+    files = _source_files(root, max_files, max_file_bytes)
+    matches: list[dict[str, object]] = []
+
+    for relative, text in files:
+        lines = text.splitlines()
+        for line_index, line in enumerate(lines):
+            if not _COUNT_LOOP_RE.search(line):
+                continue
+            end = _block_window_end(lines, line_index)
+            window = "\n".join(lines[line_index:end])
+            failure = _FAILURE_CONTINUE_RE.search(window)
+            if not failure or not _PARSE_CALL_RE.search(window[: failure.end()]):
+                continue
+            if _TRANSIENT_RETRY_RE.search(failure.group(0)):
+                continue
+            prefix = window[: failure.end()]
+            reasons = ["count_bounded_parser_loop", "parse_failure_continue_path"]
+            if not _CURSOR_PROGRESS_RE.search(prefix):
+                reasons.append("no_cursor_progress_visible_before_continue")
+            matches.append(
+                {
+                    "path": relative,
+                    "line": line_index + 1,
+                    "reason_tags": reasons,
+                    "excerpt": _excerpt(lines, max(0, line_index - 3), end),
+                }
+            )
+            if len(matches) >= max_results:
+                break
+        if len(matches) >= max_results:
+            break
+
+    return {
+        "schema_version": 1,
+        "repository_name": root.name,
+        "files_considered": len(files),
+        "matches": matches,
+        "truncated": len(matches) >= max_results,
+        "interpretation": (
+            "Heuristic review leads only. Confirm that the loop bound is attacker-controlled, "
+            "the failure branch truly leaves parser state unchanged, and the repeated work is "
+            "material under an isolated same-build benchmark."
+        ),
+        "network_access": False,
+        "target_code_executed": False,
+    }
+
+
+def source_cache_key_hotspots(
+    repository: str,
+    max_results: int = 100,
+    max_files: int = 20_000,
+    max_file_bytes: int = 2_000_000,
+) -> dict[str, object]:
+    """Find cache-key construction windows that may collapse trust dimensions."""
+
+    if not 1 <= max_results <= 500:
+        raise SourceAuditError("max_results must be between 1 and 500")
+    root = _repo_root(repository)
+    files = _source_files(root, max_files, max_file_bytes)
+    matches: list[dict[str, object]] = []
+
+    for relative, text in files:
+        lines = text.splitlines()
+        for line_index, line in enumerate(lines):
+            if not _FIXED_SCHEME_RE.search(line):
+                continue
+            if line.lstrip().startswith(("/*", "*", "//")):
+                continue
+            start = max(0, line_index - 14)
+            end = min(len(lines), line_index + 15)
+            window = "\n".join(lines[start:end])
+            if not _CACHE_KEY_CONTEXT_RE.search(window) or not _CACHE_RESOURCE_RE.search(window):
+                continue
+            dimensions = sorted(
+                {match.group(0).lower() for match in _CACHE_RESOURCE_RE.finditer(window)}
+            )
+            matches.append(
+                {
+                    "path": relative,
+                    "line": line_index + 1,
+                    "reason_tags": [
+                        "cache_or_identity_key_context",
+                        "fixed_scheme_literal_in_key_window",
+                        "trust_dimension_collapse_requires_review",
+                    ],
+                    "visible_dimensions": dimensions,
+                    "excerpt": _excerpt(lines, start, end),
+                }
+            )
+            if len(matches) >= max_results:
+                break
+        if len(matches) >= max_results:
+            break
+
+    return {
+        "schema_version": 1,
+        "repository_name": root.name,
+        "files_considered": len(files),
+        "matches": matches,
+        "truncated": len(matches) >= max_results,
+        "interpretation": (
+            "Heuristic review leads only. Compare the complete cache identity with the resource "
+            "identity and every trust boundary: scheme, authority, method, tenant, authorization, "
+            "content negotiation, and deployment namespace. A literal alone is not a finding."
         ),
         "network_access": False,
         "target_code_executed": False,
