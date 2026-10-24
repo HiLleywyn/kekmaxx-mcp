@@ -68,3 +68,10 @@ Do not claim provider receipt, valid-token replay, customer-data exposure or
 session-replay contents unless each was separately and safely established.
 
 See the bundled `press-x-vdp-validation` skill for the complete workflow.
+
+## Submission formatting
+
+Bugcrowd description fields support Markdown. Keep report headings, ordered
+reproduction steps, links and fenced request or output excerpts in Markdown when
+preparing a Bugcrowd submission. Convert to plain text only for a platform that
+does not support formatting or when the reporter explicitly requests it.

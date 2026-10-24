@@ -72,8 +72,10 @@ while a deterministic script or capture supplies the reproducible evidence.
 
 Map the final result into the program's actual fields: title, target, technical
 category, URL or location, description, reproduction steps, demonstrated impact,
-limitations, remediation and attachments. Use plain text when the form is a
-plain-text editor. Keep source-supported conditional impact visibly conditional.
+limitations, remediation and attachments. Bugcrowd description fields support
+Markdown, so preserve useful headings, lists, links and fenced PoC snippets there.
+Use plain text only when another program strips formatting or the user requests
+it. Keep source-supported conditional impact visibly conditional.
 
 Recommend redaction before the first analytics, monitoring, replay, error or
 fraud event is created. Regression tests should assert that the real credential
