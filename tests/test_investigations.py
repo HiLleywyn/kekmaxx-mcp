@@ -5,8 +5,8 @@ import sqlite3
 
 import pytest
 
-from kekmaxxing_mcp import graph, reporting
-from kekmaxxing_mcp.store import CaseStore
+from kekmaxx_mcp import graph, reporting
+from kekmaxx_mcp.store import CaseStore
 
 
 @pytest.fixture
@@ -207,7 +207,7 @@ def test_integrity_detects_tamper_even_with_matching_record_hash(case):
     store, cid = case
     row = evidence(store, cid)
     store.db.execute("DROP TRIGGER immutable_record_update")
-    from kekmaxxing_mcp.models import canonical, digest
+    from kekmaxx_mcp.models import canonical, digest
 
     updated = dict(row["data"], limitations=["Tampered but rehashed"])
     store.db.execute(

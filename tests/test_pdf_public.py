@@ -5,7 +5,7 @@ import io
 import pytest
 from pypdf import PdfWriter
 
-from kekmaxxing_mcp import pdf_public
+from kekmaxx_mcp import pdf_public
 
 
 def _blank_pdf() -> bytes:

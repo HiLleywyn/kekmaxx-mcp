@@ -4,7 +4,7 @@ import base64
 
 import pytest
 
-from kekmaxxing_mcp.inline_loader import fingerprint_public_inline_xor_loader
+from kekmaxx_mcp.inline_loader import fingerprint_public_inline_xor_loader
 
 
 def _wrapper(code: str, key: int = 90) -> str:

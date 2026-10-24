@@ -6,7 +6,7 @@ from urllib.parse import quote
 
 import pytest
 
-from kekmaxxing_mcp import ad_evidence
+from kekmaxx_mcp import ad_evidence
 
 
 def _bjs(payload: dict) -> str:

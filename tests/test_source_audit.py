@@ -3,7 +3,7 @@ from __future__ import annotations
 import subprocess
 from pathlib import Path
 
-from kekmaxxing_mcp.source_audit import (
+from kekmaxx_mcp.source_audit import (
     SourceAuditError,
     analyze_complexity_series,
     analyze_paired_benchmark_trials,

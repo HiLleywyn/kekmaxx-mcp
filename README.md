@@ -1,4 +1,4 @@
-# Kekmaxxing MCP
+# Kekmaxx MCP
 
 A guarded MCP server and command-line investigative platform for reproducible
 public-source accountability research, with private SQLite/FTS5 cases,
@@ -81,8 +81,8 @@ limits, applicable law, and a written research methodology.
 ## Install
 
 ```bash
-git clone https://github.com/HiLleywyn/kekmaxxing-mcp.git
-cd kekmaxxing-mcp
+git clone https://github.com/HiLleywyn/kekmaxx-mcp.git
+cd kekmaxx-mcp
 python -m venv .venv
 source .venv/bin/activate        # Windows: .venv\Scripts\activate
 python -m pip install -e ".[dev]"
@@ -96,7 +96,7 @@ python -m playwright install chromium
 ```
 
 Existing dedicated Chrome-for-Testing installations remain usable. The optional
-`kekmaxxing-install-browser` installer prints an executable path; set it without
+`kekmaxx-install-browser` installer prints an executable path; set it without
 committing the value:
 
 ```bash
@@ -118,7 +118,7 @@ ten executable skills, reports and monitoring. See
 for contracts, tested behavior and external access requirements.
 
 ```bash
-kekmaxxing-mcp
+kekmaxx-mcp
 ```
 
 Example client configuration:
@@ -126,8 +126,8 @@ Example client configuration:
 ```json
 {
   "mcpServers": {
-    "kekmaxxing": {
-      "command": "kekmaxxing-mcp",
+    "kekmaxx": {
+      "command": "kekmaxx-mcp",
       "args": [],
       "env": {
         "UC_BROWSER_EXECUTABLE": "/path/to/dedicated/chrome"
@@ -139,63 +139,68 @@ Example client configuration:
 
 Available MCP tools:
 
-- `browse_page`
-- `inspect_public_page`
-- `resolve_dns`
-- `inspect_tls_certificate`
-- `compare_public_pages`
-- `public_ad_destination_decode`
-- `public_archived_ad_router`
-- `fingerprint_public_ad_router`
-- `compare_public_ad_router_fingerprints`
-- `fingerprint_public_advertiser_identity_churn`
-- `google_ads_find_advertisers`
-- `public_meta_ad_ledger`
-- `recover_public_ad_destination_urls`
-- `recover_public_ad_archive_records`
-- `search_public_scan_archive`
-- `inspect_public_scan_result`
-- `reconstruct_public_ad_campaign_records`
-- `fec_independent_expenditure_summary`
-- `fec_filing_schedule_e`
-- `fec_api_schedule_e`
-- `fec_treasurer_service_baseline`
-- `fcc_search_entity_files`
-- `fcc_file_details`
-- `fcc_public_file_download_url`
-- `usaspending_award_record`
-- `fpds_award_history`
-- `wordpress_public_identity_map`
-- `public_site_identity_map`
-- `public_checkout_identity_map`
-- `wordpress_public_post_counts`
-- `wordpress_public_recent_sources`
-- `public_post_event_timeline`
-- `public_x_status`
-- `public_telegram_citation_audit`
-- `public_telegram_history_probe`
-- `public_pdf_provenance`
-- `public_certua_article_evidence`
-- `decode_public_repeating_xor_config`
-- `fingerprint_public_inline_xor_loader`
-- `public_site_manifest`
-- `public_content_factory_fingerprint`
-- `public_halo_signature_classifier`
-- `public_netlas_halo_export_analysis`
-- `public_generator_health`
-- `public_feed_media_correlation`
-- `public_snapshot_delta`
-- `public_rdap_snapshot`
-- `tse_candidate_account_search`
-- `tse_candidate_account_delta`
-- `local_source_snapshot`
-- `local_source_lifetime_hotspots`
-- `local_source_complexity_hotspots`
-- `local_complexity_series`
-- `local_source_validation_hotspots`
-- `local_source_parser_progress_hotspots`
-- `local_source_cache_key_hotspots`
-- `local_paired_benchmark_trials`
+The meme prefixes are functional labels, documented in
+[Kekmaxx names](docs/MEME-NAMES.md). `pogchamp` is reserved for the final
+evidence-complete high-severity vulnerability gate.
+
+- `touch_grass_browse_page`
+- `touch_grass_inspect_public_page`
+- `pepe_silvia_resolve_dns`
+- `hackerman_inspect_tls_certificate`
+- `distracted_boyfriend_compare_public_pages`
+- `hackerman_public_ad_destination_decode`
+- `press_f_public_archived_ad_router`
+- `hackerman_fingerprint_public_ad_router`
+- `distracted_boyfriend_compare_public_ad_router_fingerprints`
+- `distracted_boyfriend_fingerprint_public_advertiser_identity_churn`
+- `stonks_google_ads_find_advertisers`
+- `stonks_public_meta_ad_ledger`
+- `hackerman_recover_public_ad_destination_urls`
+- `press_f_recover_public_ad_archive_records`
+- `hackerman_search_public_scan_archive`
+- `hackerman_inspect_public_scan_result`
+- `pepe_silvia_reconstruct_public_ad_campaign_records`
+- `stonks_fec_independent_expenditure_summary`
+- `stonks_fec_filing_schedule_e`
+- `stonks_fec_api_schedule_e`
+- `stonks_fec_treasurer_service_baseline`
+- `stonks_fcc_search_entity_files`
+- `stonks_fcc_file_details`
+- `stonks_fcc_public_file_download_url`
+- `stonks_usaspending_award_record`
+- `stonks_fpds_award_history`
+- `pepe_silvia_wordpress_public_identity_map`
+- `pepe_silvia_public_site_identity_map`
+- `pepe_silvia_public_checkout_identity_map`
+- `pepe_silvia_wordpress_public_post_counts`
+- `pepe_silvia_wordpress_public_recent_sources`
+- `press_f_public_post_event_timeline`
+- `doge_public_x_status`
+- `press_x_public_telegram_citation_audit`
+- `doge_public_telegram_history_probe`
+- `press_x_public_pdf_provenance`
+- `press_x_public_certua_article_evidence`
+- `hackerman_decode_public_repeating_xor_config`
+- `hackerman_fingerprint_public_inline_xor_loader`
+- `pepe_silvia_public_site_manifest`
+- `pepe_silvia_public_content_factory_fingerprint`
+- `hackerman_public_halo_signature_classifier`
+- `hackerman_public_netlas_halo_export_analysis`
+- `this_is_fine_public_generator_health`
+- `this_is_fine_public_feed_media_correlation`
+- `distracted_boyfriend_public_snapshot_delta`
+- `pepe_silvia_public_rdap_snapshot`
+- `doge_tse_candidate_account_search`
+- `distracted_boyfriend_tse_candidate_account_delta`
+- `hackerman_local_source_snapshot`
+- `hackerman_local_source_lifetime_hotspots`
+- `hackerman_local_source_complexity_hotspots`
+- `hackerman_local_complexity_series`
+- `hackerman_local_source_validation_hotspots`
+- `hackerman_local_source_parser_progress_hotspots`
+- `hackerman_local_source_cache_key_hotspots`
+- `hackerman_local_paired_benchmark_trials`
+- `pogchamp_validate_security_hit`
 
 The local source tools make security-research handoffs reproducible. Start
 with an immutable, credential-free snapshot manifest, then use the lifetime,
@@ -203,14 +208,14 @@ complexity, validation-policy, parser-progress, and cache-identity detectors to
 prioritize manual source-to-sink review, and analyze preserved cost curves or
 paired candidate/control trials without executing a target. They do not build
 code, contact a target, decide exploitability, or establish novelty. See
-[Dormant infrastructure bug hunt](docs/DORMANT-BUG-HUNT.md).
+[Hackerman vulnerability hunt](docs/HACKERMAN-VULNERABILITY-HUNT.md).
 
 Decode a copied public ad URL or redirect chain locally. This makes no network
 request, redacts credential-like query values, and does not return raw user-agent,
 screen, renderer, or referrer fingerprint values:
 
 ```bash
-kekmaxxing-ad-evidence decode \
+kekmaxx-ad-evidence decode \
   'https://l.facebook.com/l.php?u=https%3A%2F%2Fexample.org%2Fstory'
 ```
 
@@ -218,7 +223,7 @@ Inspect one explicit public archive capture without executing its JavaScript or
 requesting any discovered destination:
 
 ```bash
-kekmaxxing-ad-evidence inspect \
+kekmaxx-ad-evidence inspect \
   'https://web.archive.org/web/20260101000000id_/https://example.org/click?key=example'
 ```
 
@@ -240,11 +245,11 @@ archive captures, or detect exact advertiser-name reuse across distinct public
 platform IDs:
 
 ```bash
-kekmaxxing-ad-fingerprint payload '<html>public archived router code</html>'
-kekmaxxing-ad-fingerprint compare \
+kekmaxx-ad-fingerprint payload '<html>public archived router code</html>'
+kekmaxx-ad-fingerprint compare \
   'https://web.archive.org/web/20260101000000id_/https://example.org/click?key=a' \
   'https://web.archive.org/web/20260201000000id_/https://example.org/click?key=b'
-kekmaxxing-ad-fingerprint churn public-advertiser-observations.json
+kekmaxx-ad-fingerprint churn public-advertiser-observations.json
 ```
 
 The router score is a behavior classifier, not an attribution score. Russian
@@ -261,7 +266,7 @@ entries contain `ciphertext_b64`; other fields such as timestamp and transaction
 ID are retained. The decoder makes no network request and never opens its output:
 
 ```bash
-kekmaxxing-xor-config public-config-timeline.json \
+kekmaxx-xor-config public-config-timeline.json \
   --crib-ciphertext-b64 'BASE64_VALUE_FROM_A_PUBLIC_RECORD' \
   --crib-plaintext 'https://documented.example/poll' \
   --output output/decoded-config.json
@@ -271,7 +276,7 @@ If the documented plaintext is shorter than the repeating key, it recovers only
 that many key bytes. A separately preserved full key can instead be supplied as
 
 ```bash
-kekmaxxing-xor-config public-config-timeline.json \
+kekmaxx-xor-config public-config-timeline.json \
   --key-hex 'PUBLICLY_DERIVED_HEX_KEY' \
   --output output/decoded-config.json
 ```
@@ -281,7 +286,7 @@ loader. This decoder does not execute the recovered JavaScript, fetch any URL, o
 return the decoded source code:
 
 ```bash
-kekmaxxing-inline-loader public-page.html \
+kekmaxx-inline-loader public-page.html \
   --output output/inline-loader-fingerprint.json
 ```
 
@@ -296,7 +301,7 @@ Normalize a manually preserved public Meta Ad Library ledger without giving the
 tool credentials, cookies, or a browser profile:
 
 ```bash
-kekmaxxing-meta-ads public-meta-records.json \
+kekmaxx-meta-ads public-meta-records.json \
   --source-url "https://www.facebook.com/ads/library/?..." \
   --observed-at "2026-10-12T18:00:00-05:00" \
   --output output/meta-ad-ledger.json
@@ -312,7 +317,7 @@ Unwrap a destination already embedded in a caller-supplied public redirect URL
 without making a network request:
 
 ```bash
-kekmaxxing-ad-archives unwrap \
+kekmaxx-ad-archives unwrap \
   "https://redirect.example.org/out?u=https%3A%2F%2Fexample.org%2Farticle"
 ```
 
@@ -320,7 +325,7 @@ Look up already-known public ad or landing-page URLs in the Wayback CDX index
 and optionally explicit Common Crawl collections:
 
 ```bash
-kekmaxxing-ad-archives archive \
+kekmaxx-ad-archives archive \
   "https://example.org/article" \
   --commoncrawl CC-MAIN-2026-30 \
   --output output/public-ad-archive-records.json
@@ -337,7 +342,7 @@ Validate explicit public Telegram citations without enumerating channels or
 message IDs:
 
 ```bash
-kekmaxxing-citation-audit \
+kekmaxx-citation-audit \
   https://t.me/example_channel/12345 \
   --term "example claim" \
   --output output/citation-audit.json
@@ -353,7 +358,7 @@ Inspect only explicitly selected public Telegram history pages for a rebrand or
 disclosure transition:
 
 ```bash
-kekmaxxing-telegram-history \
+kekmaxx-telegram-history \
   --channel example_channel \
   --cursor 12000 \
   --cursor 12500 \
@@ -369,7 +374,7 @@ the caller-selected public pages; matches still require manual context review.
 Inspect a directly linked public PDF for reproducible provenance signals:
 
 ```bash
-kekmaxxing-pdf \
+kekmaxx-pdf \
   https://example.org/public-report.pdf \
   --output output/public-pdf-provenance.json
 ```
@@ -384,7 +389,7 @@ Extract bounded evidence from one official CERT-UA article and optionally save
 its inline figures for visual review:
 
 ```bash
-kekmaxxing-certua 6319983 \
+kekmaxx-certua 6319983 \
   --image-dir output/certua-6319983 \
   --output output/certua-6319983.json
 ```
@@ -398,7 +403,7 @@ or smart contract.
 Build a bounded manifest of a public site's HTML and same-origin scripts:
 
 ```bash
-kekmaxxing-site-manifest \
+kekmaxx-site-manifest \
   https://example.org \
   --output output/site-manifest.json
 ```
@@ -412,7 +417,7 @@ of common ownership or data sharing.
 Compare two or more caller-selected public snapshots in chronological order:
 
 ```bash
-kekmaxxing-snapshot-delta \
+kekmaxx-snapshot-delta \
   "https://web.archive.org/web/20260101000000id_/https://example.org/" \
   "https://example.org/" \
   --label archived \
@@ -430,7 +435,7 @@ they do not identify who made the edit.
 Preserve a privacy-minimized RDAP domain snapshot:
 
 ```bash
-kekmaxxing-rdap example.org --output output/example-rdap.json
+kekmaxx-rdap example.org --output output/example-rdap.json
 ```
 
 The result keeps domain dates, nameservers, statuses, DNSSEC state, and registrar
@@ -441,7 +446,7 @@ providers do not by themselves establish common control.
 Search an official TSE candidate-account ZIP without extracting the full archive:
 
 ```bash
-kekmaxxing-tse-accounts \
+kekmaxx-tse-accounts \
   prestacao_de_contas_eleitorais_candidatos_2026.zip \
   --campaign-cnpj 00000000000000 \
   --term "example vendor" \
@@ -452,7 +457,7 @@ kekmaxxing-tse-accounts \
 On a later disclosure date, compare a previous and current archive:
 
 ```bash
-kekmaxxing-tse-accounts current.zip \
+kekmaxx-tse-accounts current.zip \
   --previous previous.zip \
   --campaign-cnpj 00000000000000 \
   --term "example vendor" \
@@ -468,13 +473,13 @@ differences, in-kind activity, amendments, and later reports can change the resu
 Search Google's official advertiser index:
 
 ```bash
-kekmaxxing-google-ads search --output output/advertisers.csv "committee name"
+kekmaxx-google-ads search --output output/advertisers.csv "committee name"
 ```
 
 Extract selected advertiser rows from one archive member:
 
 ```bash
-kekmaxxing-google-ads extract \
+kekmaxx-google-ads extract \
   --member google-political-ads-creative-stats.csv \
   --advertiser-id AR00000000000000000000 \
   --output output/creative-ledger.csv
@@ -483,7 +488,7 @@ kekmaxxing-google-ads extract \
 Filter the current FEC independent-expenditure bulk file:
 
 ```bash
-kekmaxxing-fec extract \
+kekmaxx-fec extract \
   --cycle 2026 \
   --committee-id C00000000 \
   --output output/fec-ie.csv
@@ -492,14 +497,14 @@ kekmaxxing-fec extract \
 Produce a compact candidate/state/vendor summary:
 
 ```bash
-kekmaxxing-fec summary --cycle 2026 --committee-id C00000000
+kekmaxx-fec summary --cycle 2026 --committee-id C00000000
 ```
 
 Normalize Schedule E rows from one or more public electronic filings while
 retaining each filing number, transaction ID, signer, and source URL:
 
 ```bash
-kekmaxxing-fec filing-schedule-e \
+kekmaxx-fec filing-schedule-e \
   --file-number 1234567 \
   --output output/fec-schedule-e.csv
 ```
@@ -508,7 +513,7 @@ For the processed OpenFEC API, set `FEC_API_KEY` in the MCP server process and
 use the keyset-paginated client:
 
 ```bash
-kekmaxxing-fec api-schedule-e \
+kekmaxx-fec api-schedule-e \
   --committee-id C00000000 \
   --cycle 2026 \
   --output output/openfec-schedule-e.json
@@ -525,7 +530,7 @@ Build a service-provider baseline before treating close registration timing as
 evidence of common strategic control:
 
 ```bash
-kekmaxxing-fec treasurer-baseline \
+kekmaxx-fec treasurer-baseline \
   --treasurer "Example Treasurer" \
   --cycle 2026 \
   --output output/treasurer-baseline.json
@@ -541,15 +546,15 @@ them as invoices, cash payments, or verified advertising delivery.
 Search FCC political-file metadata for a known station/entity ID:
 
 ```bash
-kekmaxxing-fcc search --entity-id 12345 --search-key "Example Committee"
+kekmaxx-fcc search --entity-id 12345 --search-key "Example Committee"
 ```
 
 Retrieve metadata for an already-known FCC file UUID or construct the official
 PDF URL from folder and file-manager UUIDs returned by the API:
 
 ```bash
-kekmaxxing-fcc details --entity-id 12345 --file-id 00000000-0000-0000-0000-000000000000
-kekmaxxing-fcc download-url \
+kekmaxx-fcc details --entity-id 12345 --file-id 00000000-0000-0000-0000-000000000000
+kekmaxx-fcc download-url \
   --folder-id 00000000-0000-0000-0000-000000000000 \
   --file-manager-id 00000000-0000-0000-0000-000000000000
 ```
@@ -562,10 +567,10 @@ stations or folders and does not try to bypass download controls.
 Reconstruct a public federal award and its FPDS transaction history:
 
 ```bash
-kekmaxxing-procurement usaspending-award \
+kekmaxx-procurement usaspending-award \
   --award-id CONT_AWD_EXAMPLE_AGENCY_PARENT_AGENCY \
   --output output/award.json
-kekmaxxing-procurement fpds-history \
+kekmaxx-procurement fpds-history \
   --piid EXAMPLE123 \
   --output output/fpds-history.json
 ```
@@ -579,7 +584,7 @@ Map account fingerprints that WordPress sites expose publicly, without trying
 to reverse the underlying email address:
 
 ```bash
-kekmaxxing-wordpress map-users \
+kekmaxx-wordpress map-users \
   --site https://example-one.invalid \
   --site https://example-two.invalid \
   --output output/public-user-map.json
@@ -589,7 +594,7 @@ Cluster public sites by exact analytics destinations, public WordPress author
 fingerprints, stack markers, and cross-domain links:
 
 ```bash
-kekmaxxing-wordpress map-sites \
+kekmaxx-wordpress map-sites \
   --site https://example-one.invalid \
   --site https://example-two.invalid \
   --output output/public-site-map.json
@@ -599,7 +604,7 @@ Compare client-side payment-gateway assets exposed on public checkout pages,
 without adding items or submitting checkout data:
 
 ```bash
-kekmaxxing-wordpress map-checkouts \
+kekmaxx-wordpress map-checkouts \
   --site https://example-one.invalid \
   --site https://example-two.invalid \
   --output output/public-checkout-map.json
@@ -608,7 +613,7 @@ kekmaxxing-wordpress map-checkouts \
 Collect a bounded, reproducible matrix of public post-search totals:
 
 ```bash
-kekmaxxing-wordpress post-counts \
+kekmaxx-wordpress post-counts \
   --site https://example.invalid \
   --term midterm \
   --term election \
@@ -620,7 +625,7 @@ Map declared source links in recent public WordPress posts and report exact
 cross-site title or body reuse:
 
 ```bash
-kekmaxxing-wordpress recent-sources \
+kekmaxx-wordpress recent-sources \
   --site https://example-one.invalid \
   --site https://example-two.invalid \
   --per-site 25 \
@@ -631,7 +636,7 @@ Compare a caller-selected set of public publishing sites and optional article
 samples for exact deployment and content-reuse signals:
 
 ```bash
-kekmaxxing-content-factory \
+kekmaxx-content-factory \
   --site https://example-one.invalid \
   --site https://example-two.invalid \
   --sample https://example-one.invalid/public-article \
@@ -655,7 +660,7 @@ Test whether public channels actually changed behavior around an outage or
 other external event, while also finding public cross-links and exact URL reuse:
 
 ```bash
-kekmaxxing-timeline \
+kekmaxx-timeline \
   --csv evidence/channel-one-public-posts.csv \
   --csv evidence/channel-two-public-posts.csv \
   --baseline-start 2026-10-01 \
@@ -689,7 +694,7 @@ keeping promotion, attribution, payment, and control as separate questions.
 Resolve one already-known public X status into a bounded JSON snapshot:
 
 ```bash
-kekmaxxing-x \
+kekmaxx-x \
   https://x.com/example/status/1900000000000000000 \
   --output output/public-x-status.json
 ```

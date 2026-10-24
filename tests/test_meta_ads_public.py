@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from kekmaxxing_mcp.meta_ads_public import normalize_public_meta_ad_ledger
+from kekmaxx_mcp.meta_ads_public import normalize_public_meta_ad_ledger
 
 SOURCE = (
     "https://www.facebook.com/ads/library/?active_status=all&"

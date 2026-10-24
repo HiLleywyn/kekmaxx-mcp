@@ -4,7 +4,7 @@ from urllib.parse import urlparse
 
 import pytest
 
-from kekmaxxing_mcp import halo_fingerprint, netlas_halo
+from kekmaxx_mcp import halo_fingerprint, netlas_halo
 
 
 def test_classifier_separates_halo_cms_from_custom_engine() -> None:

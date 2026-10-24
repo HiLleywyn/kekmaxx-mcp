@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import pytest
 
-from kekmaxxing_mcp import public_ad_archives
-from kekmaxxing_mcp.public_ad_archives import (
+from kekmaxx_mcp import public_ad_archives
+from kekmaxx_mcp.public_ad_archives import (
     lookup_public_ad_archives,
     reconstruct_public_ad_campaign,
     unwrap_public_redirect_urls,

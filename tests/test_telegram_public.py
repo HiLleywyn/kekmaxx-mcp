@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from kekmaxxing_mcp import telegram_public
+from kekmaxx_mcp import telegram_public
 
 
 def test_probe_selected_public_history_page(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -68,7 +68,7 @@ def test_cli_prints_unicode_on_windows_console(
     monkeypatch.setattr(
         telegram_public.sys,
         "argv",
-        ["kekmaxxing-telegram-history", "--channel", "example", "--cursor", "10"],
+        ["kekmaxx-telegram-history", "--channel", "example", "--cursor", "10"],
     )
 
     assert telegram_public.main() == 0

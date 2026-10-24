@@ -4,7 +4,7 @@ import json
 
 import pytest
 
-from kekmaxxing_mcp import ad_pattern_fingerprint as fingerprint
+from kekmaxx_mcp import ad_pattern_fingerprint as fingerprint
 
 ROUTER_HTML = """<!doctype html><html><head>
 <base href="//example.org/landers/story/"></head><body><script>

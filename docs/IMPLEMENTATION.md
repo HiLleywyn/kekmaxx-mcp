@@ -49,7 +49,7 @@ NetworkX temporal graphs; deterministic content/coordination/narrative analysis;
 nine bounded source adapters; ten bundled skills with executable workflows; and
 reproducible reporting and persisted, incremental local monitoring.
 
-External/provider-specific integrations listed by `source_capabilities` remain
+External/provider-specific integrations listed by `galaxy_brain_source_capabilities` remain
 explicit dependencies or unsupported automated sources. This release has no
 LLM extraction service, private-person investigation, autonomous legal judgment,
 interactive graph dashboard or external reporting automation. Investigators

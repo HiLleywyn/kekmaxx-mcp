@@ -4,7 +4,7 @@ import json
 
 import pytest
 
-from kekmaxxing_mcp import x_public
+from kekmaxx_mcp import x_public
 
 
 @pytest.mark.parametrize(

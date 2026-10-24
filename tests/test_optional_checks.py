@@ -5,7 +5,7 @@ import time
 
 import pytest
 
-from kekmaxxing_mcp.analysis import coordination_detect
+from kekmaxx_mcp.analysis import coordination_detect
 
 
 @pytest.mark.performance
@@ -22,8 +22,8 @@ def test_bounded_coordination_performance():
     os.environ.get("KEKMAXX_INTEGRATION") != "1", reason="Explicit public-network opt-in"
 )
 def test_public_sources_and_browser_live():
-    from kekmaxxing_mcp.browser import browse
-    from kekmaxxing_mcp.sources import source_collect
+    from kekmaxx_mcp.browser import browse
+    from kekmaxx_mcp.sources import source_collect
 
     snapshot = source_collect("lobbying", "Synthetic unlikely organization", limit=1)
     assert snapshot["raw_sha256"] and snapshot["record_count"] <= 1

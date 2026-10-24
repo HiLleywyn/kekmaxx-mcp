@@ -1,4 +1,0 @@
-interface:
-  display_name: "Hunt Russian Threats"
-  short_description: "Russian-linked threat hunting and active validation"
-  default_prompt: "Use $hunt-russian-threats with Codex Security and my configured Daybreak access to investigate these seeds, perform scoped active validation where authorized, and produce evidence-backed findings."

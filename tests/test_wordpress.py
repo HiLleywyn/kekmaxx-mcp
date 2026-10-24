@@ -5,7 +5,7 @@ import json
 import httpx
 import pytest
 
-from kekmaxxing_mcp import wordpress
+from kekmaxx_mcp import wordpress
 
 
 def _public_target(url: str):

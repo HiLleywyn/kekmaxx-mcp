@@ -5,7 +5,7 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 
-from kekmaxxing_mcp.analysis import (
+from kekmaxx_mcp.analysis import (
     activity_anomaly_analysis,
     content_similarity,
     coordination_detect,

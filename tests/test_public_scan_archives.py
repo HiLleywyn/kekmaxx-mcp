@@ -4,8 +4,8 @@ import json
 
 import pytest
 
-from kekmaxxing_mcp import public_scan_archives
-from kekmaxxing_mcp.public_scan_archives import search_public_urlscan
+from kekmaxx_mcp import public_scan_archives
+from kekmaxx_mcp.public_scan_archives import search_public_urlscan
 
 
 def test_search_minimizes_public_scan_metadata(monkeypatch) -> None:

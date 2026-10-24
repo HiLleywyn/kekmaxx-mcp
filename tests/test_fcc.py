@@ -4,7 +4,7 @@ import json
 
 import pytest
 
-from kekmaxxing_mcp import fcc
+from kekmaxx_mcp import fcc
 
 
 def test_search_uses_fixed_fcc_endpoint(monkeypatch: pytest.MonkeyPatch) -> None:

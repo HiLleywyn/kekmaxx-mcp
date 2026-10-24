@@ -3,12 +3,12 @@
 ## Local storage and provenance
 
 `KEKMAXX_DATA_DIR` selects private local storage. The default is
-`~/.local/share/kekmaxxing-mcp/cases.sqlite3`, outside the checkout. Unix files
+`~/.local/share/kekmaxx-mcp/cases.sqlite3`, outside the checkout. Unix files
 are mode 0600, with a 0700 containing directory. On Windows, use a private user
 directory and normal Windows ACLs. SQLite is not encrypted: use disk encryption
 when required. Research artifacts, exports and subjects never belong in Git.
 
-Create a case using `investigation_create`. Append evidence with source URL/type,
+Create a case using `gigachad_investigation_create`. Append evidence with source URL/type,
 an excerpt, original identifier, timezone-aware retrieval/publication timestamps,
 extraction version, direct/inferred observation, source status, limitations and
 collection errors. Exact supplied excerpt hashes and redacted stored excerpt
@@ -17,7 +17,7 @@ Superseding evidence appends a new version rather than altering the original.
 SQL triggers block record/audit changes. The audit uses a hash chain. Hashes
 detect consistency changes, not factual truth or external authenticity.
 
-Use `investigation_record` for entities, relationships, claims, hypotheses,
+Use `gigachad_investigation_record` for entities, relationships, claims, hypotheses,
 notes, dated events and prioritized questions. Permitted entity types are public
 organizations, domains/websites, scoped social accounts, committees, vendors,
 public officials, publications, advertisements, documents and events. Private
@@ -28,34 +28,34 @@ Statuses: directly_documented, independently_corroborated, supported_inference,
 weak_indication, disputed, contradicted and unverified. Confidence/strength are
 investigator assessments on a 0–1 scale, never statistical probabilities.
 
-`entity_resolve` returns deterministic identifier/name candidates and conflicting
-identifiers; it never merges. Explicit `entity_merge` decisions require evidence
-and reasons. `entity_merge_reverse` restores separate identities. Original
+`wojak_entity_resolve` returns deterministic identifier/name candidates and conflicting
+identifiers; it never merges. Explicit `wojak_entity_merge` decisions require evidence
+and reasons. `wojak_wojak_entity_merge_reverse` restores separate identities. Original
 entities and relationship records remain intact. Identifiers must be namespace
 qualified (e.g. `fec_committee`, `edgar_cik`, `registry:jurisdiction`). A shared
 name or provider is not identity. Review all candidates, including exact IDs.
 
-`investigation_search` uses literal token FTS conjunctions. The sequence cursor
+`gigachad_investigation_search` uses literal token FTS conjunctions. The sequence cursor
 `after` is exclusive; use `next_cursor` for subsequent pages. Page limit is
 1–1000. Analyses/exports reject cases exceeding 50,000 records.
 
 ## Graphs, claims and financial joins
 
-`network_query` operations: build, analyze, paths and relationships. `at` filters
+`pepe_silvia_network_query` operations: build, analyze, paths and relationships. `at` filters
 edge validity using a timezone-aware timestamp. `documented_only` excludes
 inferred edges. Paths include all typed edge records, evidence and contradictions.
 Analysis reports components, strong components, communities and betweenness;
 these describe the collected graph rather than real-world influence.
 
-`claim_extract` identifies sentence-level candidate assertions only.
-`claim_evidence_compare` retrieves lexical relevance, not truth/support judgments.
-`source_corroborate` shows investigator-declared independence groups and missing
+`press_x_claim_extract` identifies sentence-level candidate assertions only.
+`press_x_claim_evidence_compare` retrieves lexical relevance, not truth/support judgments.
+`press_x_source_corroborate` shows investigator-declared independence groups and missing
 assessments; different domains can syndicate the same underlying source.
-`hypothesis_test` returns predictions, contrary evidence, open questions and
+`galaxy_brain_hypothesis_test` returns predictions, contrary evidence, open questions and
 disconfirmation steps. Record multiple competing explanations explicitly.
 There is no paid LLM call or model-generated factual evidence in this release.
 
-`political_finance_trace` accepts attributed normalized transactions. Required:
+`stonks_political_finance_trace` accepts attributed normalized transactions. Required:
 source, transaction_id, documented numeric revision, measure, amount, currency,
 evidence_id, payer_id, payee_id. It keeps the latest documented revision and
 rejects conflicting same-revision records. Totals are separate for donations,
@@ -70,7 +70,7 @@ Supply 2–1000 explicitly scoped public posts: unique id, public account,
 timezone-aware published_at, text, platform, links, media_hashes and evidence_id.
 Set known_syndication only from documented news-distribution evidence.
 
-`coordination_detect` pairs accounts using Unicode token similarity, exact
+`doge_coordination_detect` pairs accounts using Unicode token similarity, exact
 canonical link reuse or media hashes, then measures coincident publication.
 The default 60-second window is compared with 199 seeded independent circular
 account shifts. Shifts preserve within-account intervals/content but randomize
@@ -79,12 +79,12 @@ it is not a probability of intent, bots, nationality or common control. Declared
 syndication is excluded as a negative control. Insufficient windows/pairs return
 no p-value. Event-driven publishing can violate the null and requires review.
 
-`content_similarity` provides exact normalized comparison, token Jaccard and
+`distracted_boyfriend_content_similarity` provides exact normalized comparison, token Jaccard and
 64-bit SimHash. Optional semantic cosine needs `[semantic]` and
 `KEKMAXX_EMBEDDING_MODEL` pointing to a local multilingual SentenceTransformer
-model; no model is downloaded silently. `narrative_track` clusters matching posts
+model; no model is downloaded silently. `doge_narrative_track` clusters matching posts
 and returns earliest-observed timelines and lead/lag. These are not necessarily
-direct amplification or original authorship. `activity_anomaly_analysis` reports
+direct amplification or original authorship. `this_is_fine_activity_anomaly_analysis` reports
 robust bursts and candidate change points; zero bins assume complete coverage.
 
 The labeled offline suite evaluates precision/recall on one coordinated fixture,
@@ -122,28 +122,28 @@ Meta Ad Library, OpenCorporates, Media Cloud, passive DNS and other licensed
 providers remain external dependencies, not pretend integrations. UK/EU/state
 finance, sanctions and court/fact-check exports can be preserved as attributable
 evidence but have no new automated registry connector in this release.
-`source_capabilities` lists these limits explicitly. Respect source terms and
+`galaxy_brain_source_capabilities` lists these limits explicitly. Respect source terms and
 licenses. Original public collectors and CLI entrypoints remain available.
 
 ## Skills and executable workflows
 
 The ten folders in `skills/` are bundled into the wheel and readable through
-MCP resource `kekmaxxing://skills/{profile}`. `investigation_workflows` discovers
-their inputs, execution steps and evidence standards. `investigation_workflow_run`
+MCP resource `kekmaxx://skills/{profile}`. `galaxy_brain_investigation_workflows` discovers
+their inputs, execution steps and evidence standards. `galaxy_brain_investigation_workflow_run`
 executes collection, analysis and report operations against a case. It does not
 fabricate graph edges or independently decide extremist/espionage classifications.
 Record reviewed edges/claims and rerun the workflow to update the report.
 
-Profiles: coordinated-influence, foreign-influence, extremist-network,
-political-money, disinformation-narrative, public-counterintelligence,
-infrastructure-relationships, evidence-verification, investigative-report,
-campaign-monitoring. Tests execute each on synthetic attributed cases.
+Profiles: pepe-silvia-coordination-map, pepe-silvia-foreign-influence, pepe-silvia-extremist-network,
+stonks-political-money, copium-narrative-check, hackerman-public-counterintel,
+pepe-silvia-infrastructure-map, press-x-to-verify, galaxy-brain-report,
+this-is-fine-monitor. Tests execute each on synthetic attributed cases.
 
 ## Codex Security and Daybreak threat-hunting skill
 
 The repository also includes an agent skill at
-[`.agents/skills/hunt-russian-threats`](../.agents/skills/hunt-russian-threats/SKILL.md).
-Codex discovers it in the repository. Invoke it with `$hunt-russian-threats`
+[`.agents/skills/pepe-silvia-threat-hunt`](../.agents/skills/pepe-silvia-threat-hunt/SKILL.md).
+Codex discovers it in the repository. Invoke it with `$pepe-silvia-threat-hunt`
 and supply the case seeds, time window, targets and existing authorization.
 
 This workflow combines public-source research, infrastructure and malware/log
@@ -153,32 +153,32 @@ Codex Security workflow and uses the host's configured Daybreak access.
 The skill does not grant model access or install scanning tools.
 
 Active work uses appropriately configured tools within the authorized target
-and technique scope. Kekmaxxing's public collectors retain their existing
+and technique scope. Kekmaxx's public collectors retain their existing
 read-only contracts. Store research evidence outside Git.
 
 This is a Codex agent skill, separate from the ten executable MCP profiles
-above; it is not an additional `investigation_workflow_run` profile.
+above; it is not an additional `galaxy_brain_investigation_workflow_run` profile.
 
 ## CLI, exports and monitoring
 
 All registered tools share one implementation with the CLI:
 
 ```bash
-kekmaxxing-investigate inventory
-echo '{"title":"Public organization research"}' | kekmaxxing-investigate investigation_create
-kekmaxxing-investigate investigation_add_evidence --input private-evidence-args.json
-kekmaxxing-investigate investigation_workflow_run --input private-workflow-args.json --output private-result.json
+kekmaxx-investigate inventory
+echo '{"title":"Public organization research"}' | kekmaxx-investigate gigachad_investigation_create
+kekmaxx-investigate gigachad_investigation_add_evidence --input private-evidence-args.json
+kekmaxx-investigate galaxy_brain_investigation_workflow_run --input private-workflow-args.json --output private-result.json
 ```
 
 The JSON files above are local research inputs, not repository examples to commit.
-`investigation_export` returns reproducible JSON, CSV, GraphML, GEXF or escaped
+`gigachad_investigation_export` returns reproducible JSON, CSV, GraphML, GEXF or escaped
 HTML graph data. `[columnar]` enables CLI `--parquet` for returned record rows.
-`investigation_report` has journalist, fact-check, platform, election-integrity,
+`gigachad_investigation_report` has journalist, fact-check, platform, election-integrity,
 regulator and defensive-indicator review templates. No submission, mass-report
 or takedown automation exists. Review privacy and evidence before external use.
 
-`monitor_configure` persists an explicit source request and interval (5 minutes
-to 30 days). `monitor_run` claims due jobs transactionally, preserves changed
+`this_is_fine_monitor_configure` persists an explicit source request and interval (5 minutes
+to 30 days). `this_is_fine_monitor_run` claims due jobs transactionally, preserves changed
 versions and emits deduplicated local alerts referencing old/new evidence.
 Unchanged snapshots do not repeat alerts. Failures back off and do not become
 source-removal conclusions. Run the explicit CLI `monitor-worker` with private

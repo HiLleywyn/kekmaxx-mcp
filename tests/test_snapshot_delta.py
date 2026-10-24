@@ -4,7 +4,7 @@ import json
 
 import pytest
 
-from kekmaxxing_mcp import snapshot_delta
+from kekmaxx_mcp import snapshot_delta
 
 
 def test_snapshot_delta_finds_visible_change_and_redacts_contacts(

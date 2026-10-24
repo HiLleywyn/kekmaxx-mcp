@@ -3,7 +3,7 @@ from __future__ import annotations
 import csv
 import json
 
-from kekmaxxing_mcp.timeline import analyze_public_post_timelines
+from kekmaxx_mcp.timeline import analyze_public_post_timelines
 
 
 def _write_posts(path, rows) -> None:

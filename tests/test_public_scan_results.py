@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from kekmaxxing_mcp import public_scan_results
-from kekmaxxing_mcp.public_scan_results import inspect_public_urlscan_result
+from kekmaxx_mcp import public_scan_results
+from kekmaxx_mcp.public_scan_results import inspect_public_urlscan_result
 
 
 def test_result_extracts_only_named_host_and_drops_query_values(monkeypatch) -> None:

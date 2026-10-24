@@ -4,7 +4,7 @@ from urllib.parse import urlparse
 
 import pytest
 
-from kekmaxxing_mcp import publishing_pipeline
+from kekmaxx_mcp import publishing_pipeline
 
 
 def _fake_validate(url: str):

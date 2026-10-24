@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from kekmaxxing_mcp.procurement import parse_fpds_atom
+from kekmaxx_mcp.procurement import parse_fpds_atom
 
 
 def test_parse_fpds_atom_extracts_timeline_fields() -> None:

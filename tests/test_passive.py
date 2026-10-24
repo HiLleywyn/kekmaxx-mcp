@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from kekmaxxing_mcp.passive import _jaccard
+from kekmaxx_mcp.passive import _jaccard
 
 
 def test_jaccard() -> None:

@@ -4,7 +4,7 @@ import base64
 
 import pytest
 
-from kekmaxxing_mcp import certua_public
+from kekmaxx_mcp import certua_public
 
 _PNG_1X1 = base64.b64decode(
     "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII="

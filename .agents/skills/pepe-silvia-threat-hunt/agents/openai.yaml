@@ -1,0 +1,4 @@
+interface:
+  display_name: "Pepe Silvia Threat Hunt"
+  short_description: "Russian-linked threat hunting and active validation"
+  default_prompt: "Use $pepe-silvia-threat-hunt with Codex Security and my configured Daybreak access to investigate these seeds, perform scoped active validation where authorized, and produce evidence-backed findings."

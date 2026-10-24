@@ -8,7 +8,7 @@ from unittest.mock import Mock
 import httpx
 import pytest
 
-from kekmaxxing_mcp import browser, safety
+from kekmaxx_mcp import browser, safety
 
 PUBLIC = ".".join(map(str, [93, 184, 216, 34]))
 PRIVATE = ".".join(map(str, [127, 0, 0, 1]))

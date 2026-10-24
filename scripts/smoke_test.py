@@ -12,9 +12,11 @@ from pathlib import Path
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
 
+from kekmaxx_mcp.branding import meme_tool_name
+
 
 def expected_inventory():
-    root = Path(__file__).resolve().parents[1] / "src/kekmaxxing_mcp"
+    root = Path(__file__).resolve().parents[1] / "src/kekmaxx_mcp"
     names = set()
     for path in (root / "server.py", root / "intelligence_tools.py"):
         for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"))):
@@ -25,7 +27,7 @@ def expected_inventory():
                     and d.func.attr == "tool"
                     for d in node.decorator_list
                 ):
-                    names.add(node.name)
+                    names.add(meme_tool_name(node.name))
     return names
 
 
@@ -33,9 +35,9 @@ async def run() -> None:
     expected = expected_inventory()
     parameters = StdioServerParameters(
         command=sys.executable,
-        args=["-m", "kekmaxxing_mcp.server"],
+        args=["-m", "kekmaxx_mcp.server"],
     )
-    temporary = tempfile.TemporaryDirectory(prefix="kekmaxxing-smoke-")
+    temporary = tempfile.TemporaryDirectory(prefix="kekmaxx-smoke-")
     parameters.env = {"KEKMAXX_DATA_DIR": temporary.name}
     async with stdio_client(parameters) as streams:
         async with ClientSession(*streams) as session:
@@ -48,10 +50,10 @@ async def run() -> None:
 
             for tool in tools.tools:
                 jsonschema.Draft202012Validator.check_schema(tool.inputSchema)
-            result = await session.call_tool("investigation_workflows", {})
+            result = await session.call_tool("galaxy_brain_investigation_workflows", {})
             if result.isError:
                 raise RuntimeError("MCP workflow call failed")
-            resource = await session.read_resource("kekmaxxing://skills/evidence-verification")
+            resource = await session.read_resource("kekmaxx://skills/press-x-to-verify")
             if not resource.contents:
                 raise RuntimeError("MCP skill resource is unavailable")
     temporary.cleanup()

@@ -4,7 +4,7 @@ import json
 
 import pytest
 
-from kekmaxxing_mcp import rdap_public
+from kekmaxx_mcp import rdap_public
 
 
 def test_rdap_snapshot_omits_registrant_contacts(monkeypatch: pytest.MonkeyPatch) -> None:

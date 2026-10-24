@@ -4,7 +4,7 @@ import json
 
 import pytest
 
-from kekmaxxing_mcp import site_manifest
+from kekmaxx_mcp import site_manifest
 
 
 def test_site_manifest_records_structure_without_form_values(

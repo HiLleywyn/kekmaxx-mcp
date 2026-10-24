@@ -1,7 +1,7 @@
 {
   "mcpServers": {
-    "kekmaxxing": {
-      "command": "kekmaxxing-mcp",
+    "kekmaxx": {
+      "command": "kekmaxx-mcp",
       "args": [],
       "env": {
         "UC_BROWSER_EXECUTABLE": "/path/to/dedicated/chrome"

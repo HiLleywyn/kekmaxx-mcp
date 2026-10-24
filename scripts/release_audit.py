@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import subprocess
 import sys
+import tomllib
 import zipfile
 from pathlib import Path
 
@@ -57,7 +58,10 @@ def main():
             print(finding, file=sys.stderr)
         return 1
     print(f"Git history privacy: OK ({count} text blobs)")
-    wheels = sorted(Path("dist").glob("*.whl"))
+    project = tomllib.loads(Path("pyproject.toml").read_text(encoding="utf-8"))["project"]
+    distribution = project["name"].replace("-", "_")
+    version = project["version"]
+    wheels = sorted(Path("dist").glob(f"{distribution}-{version}-*.whl"))
     if not wheels:
         raise RuntimeError("Build a wheel before running the release audit")
     with zipfile.ZipFile(wheels[-1]) as wheel:
@@ -65,7 +69,7 @@ def main():
         skills = [n for n in names if n.endswith("/SKILL.md")]
         assert len(skills) == 10, "Wheel must include ten usable skills"
         assert not any(n.endswith((".sqlite3", ".db", ".jsonl", ".csv", ".pdf")) for n in names)
-        assert "kekmaxxing_mcp/intelligence_tools.py" in names
+        assert "kekmaxx_mcp/intelligence_tools.py" in names
         print(f"Wheel contents: OK ({len(skills)} skills)")
     return 0
 

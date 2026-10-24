@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from kekmaxxing_mcp import citation_audit
+from kekmaxx_mcp import citation_audit
 
 
 @pytest.mark.parametrize(

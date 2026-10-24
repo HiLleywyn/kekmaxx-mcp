@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from kekmaxxing_mcp.fec import (
+from kekmaxx_mcp.fec import (
     filing_csv_url,
     next_schedule_e_cursor,
     normalize_schedule_e,

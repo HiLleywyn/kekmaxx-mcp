@@ -5,8 +5,8 @@ import time
 
 import pytest
 
-from kekmaxxing_mcp import monitoring, reasoning, sources, workflows
-from kekmaxxing_mcp.store import CaseStore
+from kekmaxx_mcp import monitoring, reasoning, sources, workflows
+from kekmaxx_mcp.store import CaseStore
 
 
 def test_source_normalizers_strip_personal_contacts_and_preserve_ids():

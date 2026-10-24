@@ -5,7 +5,7 @@ import io
 import zipfile
 from pathlib import Path
 
-from kekmaxxing_mcp.tse_accounts import (
+from kekmaxx_mcp.tse_accounts import (
     compare_tse_candidate_accounts,
     inspect_tse_candidate_accounts,
 )

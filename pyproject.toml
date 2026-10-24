@@ -3,13 +3,13 @@ requires = ["hatchling>=1.25"]
 build-backend = "hatchling.build"
 
 [project]
-name = "kekmaxxing-mcp"
-version = "0.4.3"
+name = "kekmaxx-mcp"
+version = "0.5.0"
 description = "Guarded MCP and CLI toolkit for reproducible public-source accountability research"
 readme = "README.md"
 license = { file = "LICENSE" }
 requires-python = ">=3.11"
-authors = [{ name = "Kekmaxxing contributors" }]
+authors = [{ name = "Kekmaxx contributors" }]
 keywords = ["mcp", "osint", "campaign-finance", "political-ads", "research"]
 classifiers = [
   "Development Status :: 3 - Alpha",
@@ -42,39 +42,39 @@ dev = [
 ]
 
 [project.scripts]
-kekmaxxing-mcp = "kekmaxxing_mcp.server:main"
-kekmaxxing-google-ads = "kekmaxxing_mcp.google_ads:main"
-kekmaxxing-meta-ads = "kekmaxxing_mcp.meta_ads_public:main"
-kekmaxxing-ad-archives = "kekmaxxing_mcp.public_ad_archives:main"
-kekmaxxing-fec = "kekmaxxing_mcp.fec:main"
-kekmaxxing-fcc = "kekmaxxing_mcp.fcc:main"
-kekmaxxing-procurement = "kekmaxxing_mcp.procurement:main"
-kekmaxxing-wordpress = "kekmaxxing_mcp.wordpress:main"
-kekmaxxing-timeline = "kekmaxxing_mcp.timeline:main"
-kekmaxxing-x = "kekmaxxing_mcp.x_public:main"
-kekmaxxing-citation-audit = "kekmaxxing_mcp.citation_audit:main"
-kekmaxxing-telegram-history = "kekmaxxing_mcp.telegram_public:main"
-kekmaxxing-pdf = "kekmaxxing_mcp.pdf_public:main"
-kekmaxxing-certua = "kekmaxxing_mcp.certua_public:main"
-kekmaxxing-site-manifest = "kekmaxxing_mcp.site_manifest:main"
-kekmaxxing-content-factory = "kekmaxxing_mcp.content_factory:main"
-kekmaxxing-snapshot-delta = "kekmaxxing_mcp.snapshot_delta:main"
-kekmaxxing-rdap = "kekmaxxing_mcp.rdap_public:main"
-kekmaxxing-tse-accounts = "kekmaxxing_mcp.tse_accounts:main"
-kekmaxxing-ad-evidence = "kekmaxxing_mcp.ad_evidence:main"
-kekmaxxing-ad-fingerprint = "kekmaxxing_mcp.ad_pattern_fingerprint:main"
-kekmaxxing-scan-archive = "kekmaxxing_mcp.public_scan_archives:main"
-kekmaxxing-scan-result = "kekmaxxing_mcp.public_scan_results:main"
-kekmaxxing-install-browser = "kekmaxxing_mcp.install_browser:main"
-kekmaxxing-investigate = "kekmaxxing_mcp.investigate:main"
-kekmaxxing-xor-config = "kekmaxxing_mcp.xor_config:main"
-kekmaxxing-inline-loader = "kekmaxxing_mcp.inline_loader:main"
+kekmaxx-mcp = "kekmaxx_mcp.server:main"
+kekmaxx-google-ads = "kekmaxx_mcp.google_ads:main"
+kekmaxx-meta-ads = "kekmaxx_mcp.meta_ads_public:main"
+kekmaxx-ad-archives = "kekmaxx_mcp.public_ad_archives:main"
+kekmaxx-fec = "kekmaxx_mcp.fec:main"
+kekmaxx-fcc = "kekmaxx_mcp.fcc:main"
+kekmaxx-procurement = "kekmaxx_mcp.procurement:main"
+kekmaxx-wordpress = "kekmaxx_mcp.wordpress:main"
+kekmaxx-timeline = "kekmaxx_mcp.timeline:main"
+kekmaxx-x = "kekmaxx_mcp.x_public:main"
+kekmaxx-citation-audit = "kekmaxx_mcp.citation_audit:main"
+kekmaxx-telegram-history = "kekmaxx_mcp.telegram_public:main"
+kekmaxx-pdf = "kekmaxx_mcp.pdf_public:main"
+kekmaxx-certua = "kekmaxx_mcp.certua_public:main"
+kekmaxx-site-manifest = "kekmaxx_mcp.site_manifest:main"
+kekmaxx-content-factory = "kekmaxx_mcp.content_factory:main"
+kekmaxx-snapshot-delta = "kekmaxx_mcp.snapshot_delta:main"
+kekmaxx-rdap = "kekmaxx_mcp.rdap_public:main"
+kekmaxx-tse-accounts = "kekmaxx_mcp.tse_accounts:main"
+kekmaxx-ad-evidence = "kekmaxx_mcp.ad_evidence:main"
+kekmaxx-ad-fingerprint = "kekmaxx_mcp.ad_pattern_fingerprint:main"
+kekmaxx-scan-archive = "kekmaxx_mcp.public_scan_archives:main"
+kekmaxx-scan-result = "kekmaxx_mcp.public_scan_results:main"
+kekmaxx-install-browser = "kekmaxx_mcp.install_browser:main"
+kekmaxx-investigate = "kekmaxx_mcp.investigate:main"
+kekmaxx-xor-config = "kekmaxx_mcp.xor_config:main"
+kekmaxx-inline-loader = "kekmaxx_mcp.inline_loader:main"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/kekmaxxing_mcp"]
+packages = ["src/kekmaxx_mcp"]
 
 [tool.hatch.build.targets.wheel.force-include]
-"skills" = "kekmaxxing_mcp/skills"
+"skills" = "kekmaxx_mcp/skills"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

@@ -4,7 +4,7 @@ import socket
 
 import pytest
 
-from kekmaxxing_mcp.safety import validate_public_url
+from kekmaxx_mcp.safety import validate_public_url
 
 
 @pytest.mark.parametrize(

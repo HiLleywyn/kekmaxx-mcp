@@ -4,7 +4,7 @@ from urllib.parse import urlparse
 
 import pytest
 
-from kekmaxxing_mcp import content_factory
+from kekmaxx_mcp import content_factory
 
 
 def test_content_factory_groups_exact_public_artifacts(monkeypatch: pytest.MonkeyPatch) -> None:

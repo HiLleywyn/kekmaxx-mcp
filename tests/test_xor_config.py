@@ -4,7 +4,7 @@ import base64
 
 import pytest
 
-from kekmaxxing_mcp.xor_config import (
+from kekmaxx_mcp.xor_config import (
     analyze_repeating_xor_records,
     derive_repeating_xor_key,
 )
