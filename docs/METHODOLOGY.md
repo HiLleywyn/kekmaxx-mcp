@@ -35,8 +35,11 @@ reproducible from scripts.
 
 ## Boundaries
 
-This toolkit is for public-source research. Do not use it for credential use,
-closed-group access, form submission, vulnerability exploitation, harassment,
-targeted disruption, private-person identification, or publication of sensitive
-personal data.
+This toolkit is for public-source research and narrowly authorized synthetic-
+canary validation. Do not use it for credential use, closed-group access, form
+submission, vulnerability exploitation, harassment, targeted disruption,
+private-person identification, or publication of sensitive personal data. The
+canary validator requires a written scope reference, generates an invalid value,
+and blocks canary-bearing third-party requests before transmission. It does not
+authorize broader active testing.
 

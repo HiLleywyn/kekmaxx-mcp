@@ -137,7 +137,8 @@ Record reviewed edges/claims and rerun the workflow to update the report.
 Profiles: pepe-silvia-coordination-map, pepe-silvia-foreign-influence, pepe-silvia-extremist-network,
 stonks-political-money, copium-narrative-check, hackerman-public-counterintel,
 pepe-silvia-infrastructure-map, press-x-to-verify, galaxy-brain-report,
-this-is-fine-monitor. Tests execute each on synthetic attributed cases.
+this-is-fine-monitor, press-x-vdp-validation. Tests execute each on synthetic
+attributed cases.
 
 ## Codex Security and Daybreak threat-hunting skill
 
@@ -156,7 +157,7 @@ Active work uses appropriately configured tools within the authorized target
 and technique scope. Kekmaxx's public collectors retain their existing
 read-only contracts. Store research evidence outside Git.
 
-This is a Codex agent skill, separate from the ten executable MCP profiles
+This is a Codex agent skill, separate from the executable MCP profiles
 above; it is not an additional `galaxy_brain_investigation_workflow_run` profile.
 
 ## CLI, exports and monitoring

@@ -46,7 +46,7 @@ See `INVESTIGATIONS.md` for contracts, limitations and verification instructions
 The implementation provides working components in all six phases: preserved
 collectors and hardened egress; SQLite/FTS5 evidence and reversible entities;
 NetworkX temporal graphs; deterministic content/coordination/narrative analysis;
-nine bounded source adapters; ten bundled skills with executable workflows; and
+nine bounded source adapters; eleven bundled skills with executable workflows; and
 reproducible reporting and persisted, incremental local monitoring.
 
 External/provider-specific integrations listed by `galaxy_brain_source_capabilities` remain
@@ -57,10 +57,11 @@ review source statements and record consequential assessments themselves.
 
 ## Release verification
 
-The local offline suite passes 105 tests on Windows with Python 3.11 and 3.13;
-one opt-in integration test is skipped by default. MCP handshake verification
-checks 57 tool names and input schemas, plus a bundled skill resource. All ten
-skill files pass frontmatter validation and are included in the built wheel.
+The current local offline suite passes 176 tests on Windows; one opt-in public-
+network integration test is skipped by default. MCP handshake verification
+checks 87 tool names and input schemas, plus bundled skill resources. All eleven
+skill files are included in the built wheel; the VDP skill also passes the Codex
+skill frontmatter validator.
 
 Opt-in live checks passed for the guarded browser and lobbying adapter. FARA's
 official response schema was also checked through the pinned HTTP transport.

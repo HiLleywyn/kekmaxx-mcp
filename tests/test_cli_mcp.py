@@ -35,6 +35,7 @@ def test_cli_uses_mcp_contract_and_persists_typed_evidence(tmp_path, monkeypatch
         "hackerman_decode_public_repeating_xor_config",
         "hackerman_fingerprint_public_inline_xor_loader",
         "pogchamp_validate_security_hit",
+        "press_x_authorized_browser_canary_check",
     } <= names
     assert {name for name in names if name.startswith("pogchamp_")} == {
         "pogchamp_validate_security_hit"

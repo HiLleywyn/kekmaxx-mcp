@@ -297,7 +297,7 @@ def register(mcp):
 
     @mcp.tool()
     def investigation_workflows() -> dict:
-        """Discover ten executable workflows with required inputs and evidence standards."""
+        """Discover executable workflows with required inputs and evidence standards."""
         return workflows.PROFILES
 
     @mcp.tool()

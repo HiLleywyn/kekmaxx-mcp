@@ -52,6 +52,8 @@ It combines:
   anti-automation signals, lander labels, body hashes, and language markers; and
 - offline manifests and bounded C/C++ source heuristics for authorized dormant-
   vulnerability research, without fetching remotes or executing target code; and
+- sandbox-first synthetic-canary checks for explicitly authorized VDP pages,
+  with canary-bearing third-party requests blocked before transmission; and
 - an optional dedicated-WSL/WireGuard layout that keeps research traffic
   separate from ordinary browsers and Docker workloads.
 
@@ -61,8 +63,9 @@ configurations, private keys, API keys, local paths, or generated evidence.
 
 ## Safety model
 
-The server is intentionally read-only. Public-source tools are passive, while
-local source-audit tools inspect only an already-present authorized repository:
+The server is intentionally read-only. Public-source tools are passive, local
+source-audit tools inspect only an already-present authorized repository, and
+the synthetic-canary validator is a narrow opt-in VDP check:
 
 - only public `http` and `https` URLs are accepted;
 - credentials in URLs and private, loopback, link-local, reserved, or local
@@ -72,9 +75,12 @@ local source-audit tools inspect only an already-present authorized repository:
 - FEC and Google tools use fixed official public-data endpoints; and
 - source-audit tools never fetch repository remotes, execute target code, or
   return absolute local paths; their matches are review leads, not verdicts; and
+- the canary validator requires an authorization reference, generates an invalid
+  token, requires sandbox-first evidence or a production exception, and blocks
+  canary-bearing third-party requests before transmission; and
 - returned webpage content is treated as untrusted data, never as instructions.
 
-It is not a vulnerability scanner, exploitation framework, private-person
+It is not a general vulnerability scanner, exploitation framework, private-person
 identification service, harassment tool, or access-control bypass. Follow site terms, rate
 limits, applicable law, and a written research methodology.
 
@@ -113,7 +119,7 @@ $env:UC_BROWSER_EXECUTABLE = "C:\path\printed\by\installer\chrome.exe"
 
 The expansion adds private case/evidence storage, explicit entity-resolution
 decisions, temporal graphs, coordination baselines, nine public-source adapters,
-ten executable skills, reports and monitoring. See
+eleven executable skills, reports and monitoring. See
 [Investigation guide](docs/INVESTIGATIONS.md) and [audit/plan](docs/IMPLEMENTATION.md)
 for contracts, tested behavior and external access requirements.
 
@@ -180,6 +186,7 @@ evidence-complete high-severity vulnerability gate.
 - `doge_public_telegram_history_probe`
 - `press_x_public_pdf_provenance`
 - `press_x_public_certua_article_evidence`
+- `press_x_authorized_browser_canary_check`
 - `hackerman_decode_public_repeating_xor_config`
 - `hackerman_fingerprint_public_inline_xor_loader`
 - `pepe_silvia_public_site_manifest`
@@ -209,6 +216,24 @@ prioritize manual source-to-sink review, and analyze preserved cost curves or
 paired candidate/control trials without executing a target. They do not build
 code, contact a target, decide exploitability, or establish novelty. See
 [Hackerman vulnerability hunt](docs/HACKERMAN-VULNERABILITY-HUNT.md).
+
+Check one explicitly authorized VDP page for attempted propagation of a generated
+invalid canary. The tool never accepts a real token and blocks canary-bearing
+third-party requests before transmission:
+
+```bash
+kekmaxx-canary \
+  'https://sandbox.example.test/public-document/{canary}' \
+  --authorization-reference 'public program brief reviewed on 2026-10-24' \
+  --environment sandbox \
+  --first-party-host sandbox-api.example.test \
+  --output output/canary-check.json
+```
+
+This establishes attempted client-side propagation only. It does not prove that
+a provider received or retained the value, that a valid token can be replayed,
+or that the candidate is novel. See
+[Authorized VDP web validation](docs/VDP-WEB-VALIDATION.md).
 
 Decode a copied public ad URL or redirect chain locally. This makes no network
 request, redacts credential-like query values, and does not return raw user-agent,

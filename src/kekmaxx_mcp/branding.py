@@ -17,6 +17,7 @@ _TOOL_FAMILIES = {
         "public_certua_article_evidence",
         "public_pdf_provenance",
         "public_telegram_citation_audit",
+        "authorized_browser_canary_check",
         "source_corroborate",
     },
     # Hackerman is local code inspection, protocol inspection, decoding and
@@ -152,6 +153,7 @@ WORKFLOW_PROFILE_NAMES = {
     "public-counterintelligence": "hackerman-public-counterintel",
     "infrastructure-relationships": "pepe-silvia-infrastructure-map",
     "evidence-verification": "press-x-to-verify",
+    "vdp-validation": "press-x-vdp-validation",
     "investigative-report": "galaxy-brain-report",
     "campaign-monitoring": "this-is-fine-monitor",
 }

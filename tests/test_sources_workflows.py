@@ -199,7 +199,7 @@ def test_monitor_versions_dedup_missing_records_and_failure_recovery(tmp_path, m
         assert store.integrity(cid)["valid"]
 
 
-def test_all_ten_workflows_execute_on_attributed_synthetic_case(tmp_path, monkeypatch):
+def test_all_workflows_execute_on_attributed_synthetic_case(tmp_path, monkeypatch):
     from test_coordination import posts
 
     monkeypatch.setattr(
@@ -240,4 +240,4 @@ def test_all_ten_workflows_execute_on_attributed_synthetic_case(tmp_path, monkey
         for profile in workflows.PROFILES:
             result = workflows.workflow_run(store, cid, profile, inputs)
             assert result["outputs"]
-        assert len(workflows.PROFILES) == 10
+        assert len(workflows.PROFILES) == 11

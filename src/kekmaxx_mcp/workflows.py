@@ -60,6 +60,15 @@ _LEGACY_PROFILES = {
         "steps": ["integrity", "hypotheses", "timeline", "report"],
         "standard": "Hashes establish consistency, not factual truth or source independence.",
     },
+    "vdp-validation": {
+        "objective": "Validate one authorized vulnerability candidate with scoped evidence.",
+        "required": ["evidence_ids"],
+        "steps": ["integrity", "hypotheses", "timeline", "report"],
+        "standard": (
+            "Sandbox-first synthetic-canary evidence does not prove valid-token impact, "
+            "provider receipt, novelty or program acceptance."
+        ),
+    },
     "investigative-report": {
         "objective": "Produce a source-linked human-review package.",
         "required": [],

@@ -56,6 +56,11 @@ async def run() -> None:
             resource = await session.read_resource("kekmaxx://skills/press-x-to-verify")
             if not resource.contents:
                 raise RuntimeError("MCP skill resource is unavailable")
+            vdp_resource = await session.read_resource(
+                "kekmaxx://skills/press-x-vdp-validation"
+            )
+            if not vdp_resource.contents:
+                raise RuntimeError("VDP validation skill resource is unavailable")
     temporary.cleanup()
     print("MCP handshake: OK")
     print(f"Tool inventory and schemas: OK ({len(expected)})")
